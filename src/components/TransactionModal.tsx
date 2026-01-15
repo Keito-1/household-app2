@@ -130,13 +130,23 @@ export default function TransactionModal(props: Props) {
 
           <Label>金額</Label>
           <Input
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={editingId ? editAmount : newAmount}
-            onChange={(e) =>
-              editingId
-                ? setEditAmount(e.target.value)
-                : setNewAmount(e.target.value)
-            }
+            onChange={(e) => {
+              const value = e.target.value
+
+              // 半角数字 or 空文字のみ許可
+              if (!/^\d*$/.test(value)) return
+
+              if (editingId) {
+                setEditAmount(value)
+              } else {
+                setNewAmount(value)
+              }
+            }}
           />
+
 
           <div className="flex gap-2">
             <Select
@@ -187,7 +197,7 @@ export default function TransactionModal(props: Props) {
               </Button>
             </div>
           ) : (
-            <Button className="w-full" onClick={onAdd}>
+            <Button className="w-full border-green-500 text-green-500 hover:bg-green-500 hover:text-white" onClick={onAdd}>
               追加
             </Button>
           )}
