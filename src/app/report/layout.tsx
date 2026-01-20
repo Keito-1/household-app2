@@ -1,28 +1,24 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
-import Header from '@/components/header'
 
 type Props = {
   children: ReactNode
 }
 
-export default function MonthlyLayout({ children }: Props) {
-  const { loading } = useAuthGuard()
+export default function ReportLayout({ children }: Props) {
+  // 未ログインなら /signin に飛ばす（副作用のみ）
+  useAuthGuard()
 
+  // 認証状態の取得（値はここから）
+  const { loading } = useAuth()
+
+  // 認証確認中は描画しない
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    )
+    return <div>Loading...</div>
   }
 
-  return (
-    <div className="bg-gray-200 min-h-screen">
-      <Header />
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }

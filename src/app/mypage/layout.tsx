@@ -1,28 +1,20 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
-import Header from '@/components/header'
 
 type Props = {
   children: ReactNode
 }
 
-export default function MyPageLayout({ children }: Props) {
-  const { loading } = useAuthGuard()
+export default function ReportLayout({ children }: Props) {
+  useAuthGuard()
+  const { loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    )
+    return <div>Loading...</div>
   }
 
-  return (
-    <div className="bg-gray-200 min-h-screen">
-      <Header />
-      {children}
-    </div>
-  )
+  return <>{children}</>
 }
