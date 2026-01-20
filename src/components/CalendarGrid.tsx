@@ -60,19 +60,28 @@ export default function CalendarGrid({
             <button
               key={ymd}
               onClick={() => onSelectDate(d)}
-              className="flex flex-col items-center"
+              className={[
+                // ★ ここが一番重要
+                'flex flex-col items-center justify-start',
+                'h-16 rounded-md',
+                'border border-transparent',
+                'hover:border-white',
+                'transition-colors',
+                muted,
+              ].join(' ')}
             >
+              {/* 日付 */}
               <div
                 className={[
                   'flex h-9 w-9 items-center justify-center rounded-full text-sm',
                   textColor,
-                  muted,
                   isToday && 'bg-gray-500 text-white',
                 ].join(' ')}
               >
                 {d.date()}
               </div>
 
+              {/* 収支ドット */}
               <div className="mt-1 flex gap-1">
                 {dayHasExpense(ymd) && (
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />

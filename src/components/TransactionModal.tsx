@@ -20,6 +20,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
+
 import type { Transaction, TxType } from '@/types/transaction'
 import type { Category } from '@/types/category'
 
@@ -158,7 +159,7 @@ export default function TransactionModal(props: Props) {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-black shadow-lg">
                 <SelectItem value="JPY">JPY</SelectItem>
                 <SelectItem value="AUD">AUD</SelectItem>
                 <SelectItem value="USD">USD</SelectItem>
@@ -176,7 +177,7 @@ export default function TransactionModal(props: Props) {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-black shadow-lg">
                 <SelectItem value="expense">支出</SelectItem>
                 <SelectItem value="income">収入</SelectItem>
               </SelectContent>
@@ -185,12 +186,15 @@ export default function TransactionModal(props: Props) {
 
           {editingId ? (
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={onUpdate}>
+              <Button 
+              variant="outline"
+              className="flex-1 border-gray-200 text-green-500 hover:bg-green-500 hover:text-white"
+              onClick={onUpdate}>
                 更新
               </Button>
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-gray-200 text-gray-500 hover:bg-gray-500 hover:text-white"
                 onClick={() => onOpenChange(false)}
               >
                 キャンセル
@@ -236,6 +240,7 @@ export default function TransactionModal(props: Props) {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="border-blue-400 text-blue-600 hover:bg-blue-500 hover:text-white"
                       onClick={() => onStartEdit(t)}
                     >
                       編集
@@ -243,6 +248,7 @@ export default function TransactionModal(props: Props) {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="border-red-400 text-red-600 hover:bg-red-500 hover:text-white"
                       onClick={() => onDelete(t.id)}
                     >
                       削除

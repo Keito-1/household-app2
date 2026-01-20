@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import TransactionModal from '@/components/TransactionModal'
 import CalendarGrid from '@/components/CalendarGrid'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useToast } from '@/components/ui/use-toast'
 
 import type { Transaction, TxType } from '@/types/transaction'
 import type { Category } from '@/types/category'
@@ -36,6 +38,11 @@ export default function MonthlyPage() {
   const [editAmount, setEditAmount] = useState('')
   const [editCurrency, setEditCurrency] = useState('JPY')
   const [editType, setEditType] = useState<TxType>('expense')
+
+  // delete
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+
+  const { toast } = useToast()
 
   /* =====================
      Fetch
@@ -128,6 +135,11 @@ export default function MonthlyPage() {
   const handleDelete = async (id: string) => {
     await supabase.from('transactions').delete().eq('id', id)
     fetchTransactions()
+
+    toast({
+      description: '削除が完了しました。',
+      variant: 'destructive',
+    })
   }
 
   // edit
@@ -155,19 +167,27 @@ export default function MonthlyPage() {
 
     setEditingId(null)
     fetchTransactions()
+
+    toast({
+      description: '編集内容が登録されました。',
+    })
   }
 
   return (
     <main className="mx-auto max-w-4xl p-4 bg-gray-200 text-black">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <Button variant="ghost" onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}>
+        <Button variant="ghost"
+          className="text-2xl font-bold"
+          onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}>
           ‹
         </Button>
         <h1 className="text-lg font-semibold">
           {currentMonth.format('MMMM YYYY')}
         </h1>
-        <Button variant="ghost" onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}>
+        <Button variant="ghost"
+          className="text-2xl font-bold"
+          onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}>
           ›
         </Button>
       </div>
@@ -208,7 +228,19 @@ export default function MonthlyPage() {
         setEditType={setEditType}
         onStartEdit={startEdit}
         onUpdate={handleUpdate}
-        onDelete={handleDelete}
+        onDelete={(id) => setDeleteTargetId(id)}
+      />
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(v) => !v && setDeleteTargetId(null)}
+        title="削除確認"
+        description="本当に削除しますか？"
+        onConfirm={() => {
+          if (deleteTargetId) {
+            handleDelete(deleteTargetId)
+            setDeleteTargetId(null)
+          }
+        }}
       />
     </main>
   )
