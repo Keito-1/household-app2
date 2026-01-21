@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useAuth } from '@/contexts/AuthContext'
 
 import type { Transaction } from '@/types/transaction'
 
@@ -32,6 +33,7 @@ type Currency = (typeof CURRENCIES)[number]
 ===================== */
 export default function YearlyPage() {
   const router = useRouter()
+  const { user } = useAuth()
 
   const [currentYear, setCurrentYear] = useState(dayjs().year())
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -43,8 +45,7 @@ export default function YearlyPage() {
   const fetchYearlyTransactions = async () => {
     setLoading(true)
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) {
+    if (!user) {
       router.push('/signin')
       setLoading(false)
       return
@@ -71,8 +72,7 @@ export default function YearlyPage() {
 
   useEffect(() => {
     fetchYearlyTransactions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentYear])
+  }, [currentYear, user])
 
   /* =====================
      月別集計（通貨ごと）

@@ -10,16 +10,24 @@ import TransactionModal from '@/components/TransactionModal'
 import CalendarGrid from '@/components/CalendarGrid'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/contexts/AuthContext'
 
 import type { Transaction, TxType } from '@/types/transaction'
 import type { Category } from '@/types/category'
 
+type ModalTransaction = Pick<
+  Transaction,
+  'id' | 'amount' | 'currency' | 'type' | 'category_id'
+>
+
 export default function MonthlyPage() {
   const router = useRouter()
+  const { user, categories } = useAuth()
+
+  const activeCategories: Category[] = categories.filter(c => c.is_active)
 
   const [currentMonth, setCurrentMonth] = useState(dayjs())
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
 
   // modal
@@ -50,8 +58,7 @@ export default function MonthlyPage() {
   const fetchTransactions = async () => {
     setLoading(true)
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) {
+    if (!user) {
       router.push('/signin')
       setLoading(false)
       return
@@ -71,24 +78,9 @@ export default function MonthlyPage() {
     setLoading(false)
   }
 
-  const fetchCategories = async () => {
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) return
-
-    const { data } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('user_id', auth.user.id)
-      .eq('is_active', true)
-      .order('sort_order')
-
-    setCategories(data ?? [])
-  }
-
   useEffect(() => {
     fetchTransactions()
-    fetchCategories()
-  }, [currentMonth])
+  }, [currentMonth, user])
 
   /* =====================
      Calendar helpers
@@ -116,11 +108,10 @@ export default function MonthlyPage() {
   const handleAdd = async () => {
     if (!newCategoryId || !newAmount) return
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) return
+    if (!user) return
 
     await supabase.from('transactions').insert({
-      user_id: auth.user.id,
+      user_id: user.id,
       date: selectedDate,
       category_id: newCategoryId,
       amount: Number(newAmount),
@@ -143,7 +134,7 @@ export default function MonthlyPage() {
   }
 
   // edit
-  const startEdit = (t: Transaction) => {
+  const startEdit = (t: ModalTransaction) => {
     setEditingId(t.id)
     setEditCategoryId(t.category_id ?? '')
     setEditAmount(String(t.amount))
@@ -205,7 +196,7 @@ export default function MonthlyPage() {
         onOpenChange={setIsOpen}
         selectedDate={selectedDate}
         transactions={dayTx(selectedDate)}
-        categories={categories}
+        categories={activeCategories}
 
         newCategoryId={newCategoryId}
         setNewCategoryId={setNewCategoryId}

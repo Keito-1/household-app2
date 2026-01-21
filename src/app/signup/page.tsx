@@ -94,7 +94,7 @@ export default function SignupPage() {
 
           {/* Link */}
           <p className="text-center text-sm text-gray-600">
-            すでにアカウントをお持ちですか？{' '}
+            すでにアカウントをお持ちですか？
             <button
               onClick={() => router.push('/signin')}
               className="text-blue-600 hover:underline"

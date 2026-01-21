@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useAuth } from '@/contexts/AuthContext'
 
 import type { Transaction } from '@/types/transaction'
 
@@ -34,6 +35,7 @@ type Currency = (typeof CURRENCIES)[number]
 ===================== */
 export default function ReportPage() {
   const router = useRouter()
+  const { user } = useAuth()
 
   const [currentMonth, setCurrentMonth] = useState(dayjs())
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -45,8 +47,7 @@ export default function ReportPage() {
   const fetchTransactions = async () => {
     setLoading(true)
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) {
+    if (!user) {
       router.push('/signin')
       setLoading(false)
       return
@@ -73,8 +74,7 @@ export default function ReportPage() {
 
   useEffect(() => {
     fetchTransactions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMonth])
+  }, [currentMonth, user])
 
   /* =====================
      通貨別分割

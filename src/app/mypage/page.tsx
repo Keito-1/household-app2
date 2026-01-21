@@ -6,17 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useAuth } from '@/contexts/AuthContext'
 
+import type { Category } from '@/types/category'
 
 type CategoryType = 'expense' | 'income'
-
-type Category = {
-  id: string
-  name: string
-  type: CategoryType
-  is_active: boolean
-  sort_order: number
-}
 
 type MyPageView = 'categories' | 'inactive' | 'profile'
 
@@ -29,8 +23,7 @@ const DEFAULT_CATEGORIES = [
 ]
 
 export default function MyPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, categories, fetchCategories } = useAuth()
 
   const [view, setView] = useState<MyPageView>('categories')
   const [activeType, setActiveType] = useState<CategoryType>('expense')
@@ -47,57 +40,8 @@ export default function MyPage() {
 
 
   /* =====================
-    Fetch Categories
+    Profile
   ===================== */
-  const fetchCategories = async () => {
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) {
-      setLoading(false)
-      return
-    }
-
-    const { data } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('user_id', auth.user.id)
-      .order('sort_order')
-
-    if (!data || data.length === 0) {
-      const { count } = await supabase
-        .from('categories')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', auth.user.id)
-
-      if (count === 0) {
-        await supabase.from('categories').insert(
-          DEFAULT_CATEGORIES.map((c, i) => ({
-            user_id: auth.user.id,
-            name: c.name,
-            type: c.type,
-            sort_order: i,
-            is_active: true,
-          }))
-        )
-      }
-
-      const { data: created } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', auth.user.id)
-        .order('sort_order')
-
-      setCategories(created ?? [])
-      setLoading(false)
-      return
-    }
-
-    setCategories(data)
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchCategories()
-  }, [])
 
   /* =====================
     Handlers
@@ -114,11 +58,10 @@ export default function MyPage() {
       return
     }
 
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) return
+    if (!user) return
 
     await supabase.from('categories').insert({
-      user_id: auth.user.id,
+      user_id: user.id,
       name: trimmed,
       type: newType,
       sort_order: categories.length,
@@ -155,18 +98,11 @@ export default function MyPage() {
   useEffect(() => {
     if (view !== 'profile') return
 
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (!data.user) return
+    if (!user) return
 
-      setEmail(data.user.email ?? '')
-      setDisplayName(data.user.user_metadata?.name ?? '')
-    }
-
-    fetchUser()
-  }, [view])
-
-  if (loading) return <p className="p-4">Loading...</p>
+    setEmail(user.email ?? '')
+    setDisplayName(user.user_metadata?.name ?? '')
+  }, [view, user])
 
   return (
     <main className="p-4">
