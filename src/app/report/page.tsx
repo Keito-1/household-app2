@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import dayjs from 'dayjs'
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore' 
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
 
 import type { Transaction } from '@/types/transaction'
+import { ALL_JPY, CURRENCIES } from '@/types/currency'
+
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,11 +27,7 @@ import {
   CartesianGrid,
 } from 'recharts'
 
-/* =====================
-   Constants / Types
-===================== */
-const CURRENCIES = ['JPY', 'AUD', 'USD'] as const
-type Currency = (typeof CURRENCIES)[number]
+dayjs.extend(isSameOrBefore)
 
 /* =====================
    Page
@@ -39,337 +38,407 @@ export default function ReportPage() {
 
   const [currentMonth, setCurrentMonth] = useState(dayjs())
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [exchangeRates, setExchangeRates] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
+  const selectedDate = currentMonth.endOf('month').format('YYYY-MM-DD')
+
   /* =====================
-     Fetch（月次）
+     取引取得
   ===================== */
   const fetchTransactions = async () => {
-    setLoading(true)
-
     if (!user) {
       router.push('/signin')
-      setLoading(false)
       return
     }
+
+    setLoading(true)
 
     const start = currentMonth.startOf('month').format('YYYY-MM-DD')
     const end = currentMonth.endOf('month').format('YYYY-MM-DD')
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('transactions')
-      .select(`
-    *,
-    category: categories(name)
-  `)
+      .select('*, category: categories(name)')
       .gte('date', start)
       .lte('date', end)
 
-    if (!error && data) {
-      setTransactions(data as Transaction[])
-    }
-
+    setTransactions((data ?? []) as Transaction[])
     setLoading(false)
+  }
+
+  /* =====================
+     為替取得
+  ===================== */
+  const fetchExchangeRates = async () => {
+    const start = currentMonth.startOf('month').format('YYYY-MM-DD')
+    const end = currentMonth.endOf('month').format('YYYY-MM-DD')
+
+    const { data } = await supabase
+      .from('exchange_rates')
+      .select('rate_date, target_currency, rate')
+      .gte('rate_date', start)
+      .lte('rate_date', end)
+
+    setExchangeRates(data ?? [])
   }
 
   useEffect(() => {
     fetchTransactions()
+    fetchExchangeRates()
   }, [currentMonth, user])
 
   /* =====================
-     通貨別分割
+     🔥 日次レート換算（唯一の追加ロジック）
+     UIには一切影響しない
   ===================== */
-  const transactionsByCurrency = useMemo(() => {
-    return CURRENCIES.reduce((acc, currency) => {
-      acc[currency] = transactions.filter((t) => t.currency === currency)
-      return acc
-    }, {} as Record<Currency, Transaction[]>)
-  }, [transactions])
+  const transactionsWithJPY = useMemo(() => {
+    return transactions.map((t) => {
+      if (t.currency === 'JPY') {
+        return { ...t, amount_jpy: t.amount }
+      }
+
+      const rate = exchangeRates
+        .filter(
+          (r) =>
+            r.target_currency === t.currency &&
+            r.rate_date <= t.date
+        )
+        .sort((a, b) => b.rate_date.localeCompare(a.rate_date))[0]
+
+      return {
+        ...t,
+        amount_jpy: rate ? Math.round(t.amount / rate.rate) : 0,
+        used_rate_date: rate?.rate_date ?? null,
+      }
+    })
+  }, [transactions, exchangeRates])
 
   /* =====================
-     通貨別集計（合計）
+     フォールバック表示用メタ
   ===================== */
-  const totalsByCurrency = useMemo(() => {
-    return CURRENCIES.reduce((acc, currency) => {
-      const list = transactionsByCurrency[currency]
+  const fxMeta = useMemo(() => {
+    if (exchangeRates.length === 0) return null
 
-      const income = list
+    const selected = dayjs(selectedDate)
+
+    // selectedDate(=月末日) 以前で取得できている「最新の為替日」を日付として求める
+    const latestRateDate = exchangeRates
+      .map((r) => r.rate_date)
+      .filter(Boolean)
+      .filter((d) => dayjs(d).isValid() && dayjs(d).isSameOrBefore(selected))
+      .sort((a, b) => dayjs(a).valueOf() - dayjs(b).valueOf())
+      .at(-1)
+
+    if (!latestRateDate) return null
+
+    return {
+      rate_date: latestRateDate,
+    }
+  }, [exchangeRates, selectedDate])
+
+  /* =====================
+     集計（JPY換算後）
+  ===================== */
+  const totalIncomeJPY = useMemo(
+    () =>
+      transactionsWithJPY
         .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount_jpy, 0),
+    [transactionsWithJPY]
+  )
 
-      const expense = list
+  const totalExpenseJPY = useMemo(
+    () =>
+      transactionsWithJPY
         .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0)
+        .reduce((sum, t) => sum + t.amount_jpy, 0),
+    [transactionsWithJPY]
+  )
 
-      acc[currency] = {
-        income,
-        expense,
-        balance: income - expense,
-      }
+  const balanceJPY = totalIncomeJPY - totalExpenseJPY
 
-      return acc
-    }, {} as Record<Currency, { income: number; expense: number; balance: number }>)
-  }, [transactionsByCurrency])
+  //  貯金額推移（累積）を作る関数（タブごとに使う）
+  const buildBarChartData = (
+    baseTransactions: any[],
+    isAllJPY: boolean,
+    currentMonth: dayjs.Dayjs
+  ) => {
+    let cumulative = 0
 
-  /* =====================
-     円グラフ用（カテゴリ別）
-  ===================== */
-  const pieDataByCurrency = useMemo(() => {
-    return CURRENCIES.reduce((acc, currency) => {
-      const list = transactionsByCurrency[currency]
+    return Array.from({ length: currentMonth.daysInMonth() }, (_, i) => {
+      const day = i + 1
 
-      const expenseMap: Record<string, number> = {}
-      const incomeMap: Record<string, number> = {}
+      const daily = baseTransactions.filter(
+        (t) => dayjs(t.date).date() === day
+      )
 
-      list.forEach((t) => {
-        if (t.type === 'expense') {
-          const categoryName = t.category?.name ?? '未分類'
-          expenseMap[categoryName] =
-            (expenseMap[categoryName] || 0) + t.amount
-        } else {
-          const categoryName = t.category?.name ?? '未分類'
-          incomeMap[categoryName] =
-            (incomeMap[categoryName] || 0) + t.amount
-        }
-      })
+      const dailyIncome = daily
+        .filter((t) => t.type === 'income')
+        .reduce((s, t) => s + (isAllJPY ? t.amount_jpy : t.amount), 0)
 
-      acc[currency] = {
-        expense: Object.entries(expenseMap).map(([name, value]) => ({ name, value })),
-        income: Object.entries(incomeMap).map(([name, value]) => ({ name, value })),
-      }
+      const dailyExpense = daily
+        .filter((t) => t.type === 'expense')
+        .reduce((s, t) => s + (isAllJPY ? t.amount_jpy : t.amount), 0)
 
-      return acc
-    }, {} as Record<
-      Currency,
-      {
-        expense: { name: string; value: number }[]
-        income: { name: string; value: number }[]
-      }
-    >)
-  }, [transactionsByCurrency])
+      // ✅ ここがポイント：日ごとの収支を「累積」する
+      cumulative += dailyIncome - dailyExpense
 
-  /* =====================
-     棒グラフ用（貯金額＝累積収支）
-     1日ごとの net（収入-支出）→ 月内で累積
-  ===================== */
-  const balanceBarByCurrency = useMemo(() => {
-    return CURRENCIES.reduce((acc, currency) => {
-      const list = transactionsByCurrency[currency]
-
-      const start = currentMonth.startOf('month')
-      const end = currentMonth.endOf('month')
-      const daysInMonth = end.date()
-
-      // date(YYYY-MM-DD) => net（その日の収支）
-      const netMap: Record<string, number> = {}
-
-      list.forEach((t) => {
-        const key = t.date
-        const delta = t.type === 'income' ? t.amount : -t.amount
-        netMap[key] = (netMap[key] || 0) + delta
-      })
-
-      // 1日〜末日まで累積
-      let running = 0
-      const data = Array.from({ length: daysInMonth }, (_, i) => {
-        const d = start.add(i, 'day')
-        const key = d.format('YYYY-MM-DD')
-        running += netMap[key] || 0
-        return {
-          day: String(i + 1), // X軸表示用
-          balance: running,   // 累積収支（＝貯金額の推移）
-        }
-      })
-
-      acc[currency] = data
-      return acc
-    }, {} as Record<Currency, { day: string; balance: number }[]>)
-  }, [transactionsByCurrency, currentMonth])
+      return { day, balance: cumulative }
+    })
+  }
 
   return (
-    <main className="mx-auto max-w-5xl p-4 bg-gray-200 min-h-screen text-black">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="max-w-5xl mx-auto px-4 pb-12">
+      {/* 月切り替え */}
+      <div className="flex items-center justify-center justify-between my-6">
         <button
-          className="px-2 text-xl"
           onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}
+          className="text-xl"
         >
           ‹
         </button>
-        <h1 className="text-xl font-semibold">
-          {currentMonth.format('YYYY年 M月')} レポート
-        </h1>
+        <h2 className="text-xl font-semibold">
+          {currentMonth.format('YYYY年 M月')} 月間レポート
+        </h2>
         <button
-          className="px-2 text-xl"
           onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}
+          className="text-xl"
         >
           ›
         </button>
       </div>
 
-      {loading ? (
-        <p className="text-gray-500">Loading...</p>
-      ) : (
-        <Tabs defaultValue="JPY" className="w-full">
-          <TabsList className="mb-6">
-            {CURRENCIES.map((c) => (
-              <TabsTrigger key={c} value={c}>
-                {c}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      <Tabs defaultValue="JPY">
+        <TabsList className="flex flex-wrap gap-2 mb-4">
+          {CURRENCIES.map((c) => (
+            <TabsTrigger
+              key={c}
+              value={c}
+              className="bg-white text-black hover:bg-gray-500 hover:text-white"
+            >
+              {c}
+            </TabsTrigger>
+          ))}
+          <TabsTrigger
+            value={ALL_JPY}
+            className="bg-white text-black hover:bg-gray-500 hover:text-white"
+          >
+            全通貨（JPY換算）
+          </TabsTrigger>
+        </TabsList>
 
-          {CURRENCIES.map((currency) => {
-            const totals = totalsByCurrency[currency]
-            const pie = pieDataByCurrency[currency]
-            const barData = balanceBarByCurrency[currency]
+        {fxMeta?.rate_date && fxMeta.rate_date !== selectedDate && (
+          <p className="text-xs text-orange-500 mb-2">
+            ※指定日({selectedDate})の為替が無いため、
+            直近営業日のレート({fxMeta.rate_date})を使用しています
+          </p>
+        )}
 
-            return (
-              <TabsContent key={currency} value={currency}>
-                {/* Summary */}
-                <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                  <Card className="bg-white shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">収入</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold text-green-600">
-                        {totals.income.toLocaleString()} {currency}
-                      </p>
-                    </CardContent>
-                  </Card>
+        {[...CURRENCIES, ALL_JPY].map((currency) => {
+          const isAllJPY = currency === ALL_JPY
 
-                  <Card className="bg-white shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">支出</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-2xl font-bold text-red-600">
-                        {totals.expense.toLocaleString()} {currency}
-                      </p>
-                    </CardContent>
-                  </Card>
+          const baseTransactions = isAllJPY
+            ? transactionsWithJPY
+            : transactions.filter((t) => t.currency === currency)
 
-                  <Card className="bg-white shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">収支（貯金額）</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p
-                        className={`text-2xl font-bold ${totals.balance >= 0 ? 'text-blue-600' : 'text-red-600'
-                          }`}
-                      >
-                        {totals.balance.toLocaleString()} {currency}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+          const income = baseTransactions
+            .filter((t) => t.type === 'income')
+            .reduce(
+              (sum, t) => sum + (isAllJPY ? t.amount_jpy : t.amount),
+              0
+            )
 
-                {/* Balance Bar Chart */}
-                <Card className="bg-white shadow-lg mb-6">
+          const expense = baseTransactions
+            .filter((t) => t.type === 'expense')
+            .reduce(
+              (sum, t) => sum + (isAllJPY ? t.amount_jpy : t.amount),
+              0
+            )
+
+          const balance = income - expense
+
+          const barChartData = buildBarChartData(
+            baseTransactions as any[],
+            isAllJPY,
+            currentMonth
+          )
+
+          return (
+            <TabsContent key={currency} value={currency}>
+              {/* ===== Cards ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card className="bg-white shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-sm text-gray-500">
-                      貯金額（累積収支）の推移
+                      収入
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="h-72">
-                    {barData.length === 0 ? (
-                      <p className="text-sm text-gray-400">データがありません</p>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={barData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="day" tickMargin={8} />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="balance">
-                            {barData.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={entry.balance >= 0 ? '#3b82f6' : '#ef4444'}
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
+                  <CardContent className="text-xl font-bold text-green-600">
+                    {income.toLocaleString()} {isAllJPY ? 'JPY' : currency}
                   </CardContent>
                 </Card>
 
-                {/* Pie Charts */}
-                <div className="grid gap-6 sm:grid-cols-2">
-                  {/* Expense */}
-                  <Card className="bg-white shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">
-                        支出（カテゴリ別）
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-64">
-                      {pie.expense.length === 0 ? (
-                        <p className="text-sm text-gray-400">データがありません</p>
-                      ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={pie.expense}
-                              dataKey="value"
-                              nameKey="name"
-                              outerRadius={90}
-                              label
-                            >
-                              {pie.expense.map((_, i) => (
-                                <Cell
-                                  key={i}
-                                  fill={['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'][i % 5]}
-                                />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      )}
-                    </CardContent>
-                  </Card>
+                <Card className="bg-white shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500">
+                      支出
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xl font-bold text-red-600">
+                    {expense.toLocaleString()} {isAllJPY ? 'JPY' : currency}
+                  </CardContent>
+                </Card>
 
-                  {/* Income */}
-                  <Card className="bg-white shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">
-                        収入（カテゴリ別）
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-64">
-                      {pie.income.length === 0 ? (
-                        <p className="text-sm text-gray-400">データがありません</p>
-                      ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={pie.income}
-                              dataKey="value"
-                              nameKey="name"
-                              outerRadius={90}
-                              label
-                            >
-                              {pie.income.map((_, i) => (
-                                <Cell
-                                  key={i}
-                                  fill={['#22c55e', '#3b82f6', '#8b5cf6', '#06b6d4'][i % 4]}
-                                />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            )
-          })}
-        </Tabs>
-      )}
-    </main>
+                <Card className="bg-white shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500">
+                      収支（貯金額）
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xl font-bold text-blue-600">
+                    {balance.toLocaleString()} {isAllJPY ? 'JPY' : currency}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* ===== 貯金額推移（棒グラフ） ===== */}
+              <Card className="bg-white shadow-lg mb-6">
+                <CardHeader>
+                  <CardTitle className="text-sm text-gray-500">
+                    貯金額推移
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={barChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="balance" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* ===== 円グラフ ===== */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-white shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500">
+                      支出（カテゴリ別）
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={Object.values(
+                            baseTransactions
+                              .filter((t) => t.type === 'expense')
+                              .reduce((acc: any, t: any) => {
+                                const key = t.category?.name ?? '未分類'
+                                acc[key] =
+                                  (acc[key] ?? 0) +
+                                  (isAllJPY ? t.amount_jpy : t.amount)
+                                return acc
+                              }, {})
+                          ).map((v, i) => ({
+                            name: Object.keys(
+                              baseTransactions
+                                .filter((t) => t.type === 'expense')
+                                .reduce((acc: any, t: any) => {
+                                  acc[t.category?.name ?? '未分類'] = true
+                                  return acc
+                                }, {})
+                            )[i],
+                            value: v,
+                          }))}
+                          dataKey="value"
+                          nameKey="name"
+                          outerRadius={80}
+                          label
+                        >
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={[
+                                '#f97316',
+                                '#ef4444',
+                                '#eab308',
+                                '#22c55e',
+                                '#3b82f6',
+                              ][i % 5]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500">
+                      収入（カテゴリ別）
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={Object.values(
+                            baseTransactions
+                              .filter((t) => t.type === 'income')
+                              .reduce((acc: any, t: any) => {
+                                const key = t.category?.name ?? '未分類'
+                                acc[key] =
+                                  (acc[key] ?? 0) +
+                                  (isAllJPY ? t.amount_jpy : t.amount)
+                                return acc
+                              }, {})
+                          ).map((v, i) => ({
+                            name: Object.keys(
+                              baseTransactions
+                                .filter((t) => t.type === 'income')
+                                .reduce((acc: any, t: any) => {
+                                  acc[t.category?.name ?? '未分類'] = true
+                                  return acc
+                                }, {})
+                            )[i],
+                            value: v,
+                          }))}
+                          dataKey="value"
+                          nameKey="name"
+                          outerRadius={80}
+                          label
+                        >
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={[
+                                '#22c55e',
+                                '#3b82f6',
+                                '#a855f7',
+                                '#ec4899',
+                                '#14b8a6',
+                              ][i % 5]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )
+        })}
+      </Tabs>
+    </div >
   )
 }

@@ -1,10 +1,8 @@
-export type CategoryType = 'income' | 'expense'
+import type { TransactionType } from './transaction'
 
-export type Category = {
+export interface Category {
   id: string
   user_id: string
   name: string
-  type: CategoryType
-  sort_order: number
-  is_active: boolean
+  type: TransactionType
 }

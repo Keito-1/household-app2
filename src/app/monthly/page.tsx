@@ -12,13 +12,10 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
 
-import type { Transaction, TxType } from '@/types/transaction'
+import type { Transaction, TransactionType, ModalTransaction } from '@/types/transaction'
 import type { Category } from '@/types/category'
 
-type ModalTransaction = Pick<
-  Transaction,
-  'id' | 'amount' | 'currency' | 'type' | 'category_id'
->
+
 
 export default function MonthlyPage() {
   const router = useRouter()
@@ -38,23 +35,21 @@ export default function MonthlyPage() {
   const [newCategoryId, setNewCategoryId] = useState('')
   const [newAmount, setNewAmount] = useState('')
   const [newCurrency, setNewCurrency] = useState('JPY')
-  const [newType, setNewType] = useState<TxType>('expense')
+  const [newType, setNewType] = useState<TransactionType>('expense')
 
   // edit
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCategoryId, setEditCategoryId] = useState('')
   const [editAmount, setEditAmount] = useState('')
   const [editCurrency, setEditCurrency] = useState('JPY')
-  const [editType, setEditType] = useState<TxType>('expense')
+  const [editType, setEditType] = useState<TransactionType>('expense')
 
   // delete
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const { toast } = useToast()
 
-  /* =====================
-     Fetch
-  ===================== */
+  // Fetch
   const fetchTransactions = async () => {
     setLoading(true)
 
@@ -82,20 +77,16 @@ export default function MonthlyPage() {
     fetchTransactions()
   }, [currentMonth, user])
 
-  /* =====================
-     Calendar helpers
-  ===================== */
+  // Calendar helpers
   const calendarDays = useMemo(() => {
     const start = currentMonth.startOf('month').startOf('week')
     return Array.from({ length: 42 }, (_, i) => start.add(i, 'day'))
   }, [currentMonth])
 
-  const dayTx = (ymd: string) =>
+  const dayTx = (ymd: string): Transaction[] =>
     transactions.filter((t) => t.date === ymd)
 
-  /* =====================
-     Handlers
-  ===================== */
+  // Handlers
   const openModal = (d: dayjs.Dayjs) => {
     setSelectedDate(d.format('YYYY-MM-DD'))
     setIsOpen(true)
@@ -165,7 +156,7 @@ export default function MonthlyPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl p-4 bg-gray-200 text-black">
+    <main className="mx-auto max-w-5xl p-4 bg-gray-200 text-black">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost"

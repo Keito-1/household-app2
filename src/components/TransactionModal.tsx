@@ -163,6 +163,11 @@ export default function TransactionModal(props: Props) {
                 <SelectItem value="JPY">JPY</SelectItem>
                 <SelectItem value="AUD">AUD</SelectItem>
                 <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+                <SelectItem value="GBP">GBP</SelectItem>
+                <SelectItem value="CAD">CAD</SelectItem>
+                <SelectItem value="NZD">NZD</SelectItem>
+                <SelectItem value="PHP">PHP</SelectItem>
               </SelectContent>
             </Select>
 
