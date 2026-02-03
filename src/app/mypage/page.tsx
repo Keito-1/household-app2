@@ -59,6 +59,10 @@ export default function MyPage() {
   const [editRecurringDayOfMonth, setEditRecurringDayOfMonth] = useState(1)
   const [editRecurringDayOfWeek, setEditRecurringDayOfWeek] = useState(0)
 
+  const [savingRecurring, setSavingRecurring] = useState(false)
+  const [deletingRecurring, setDeletingRecurring] = useState(false)
+
+
   // Handlers
   const handleAdd = async () => {
     const trimmed = newName.trim()
@@ -181,35 +185,41 @@ export default function MyPage() {
 
   const handleUpdateRecurring = async (id: string) => {
     const amount = Number(editRecurringAmount)
-    if (!amount || amount <= 0) return
+    if (savingRecurring) return
+    setSavingRecurring(true)
+    try {
+      if (!amount || amount <= 0) return
 
-    const payload: any = {
-      type: editRecurringType,
-      amount,
-      currency: editRecurringCurrency,
-      cycle: editRecurringCycle,
-      category_id: editRecurringCategoryId,
+      const payload: any = {
+        type: editRecurringType,
+        amount,
+        currency: editRecurringCurrency,
+        cycle: editRecurringCycle,
+        category_id: editRecurringCategoryId,
+      }
+
+      if (editRecurringCycle === 'monthly') {
+        payload.day_of_month = editRecurringDayOfMonth
+        payload.day_of_week = null
+      } else {
+        payload.day_of_week = editRecurringDayOfWeek
+        payload.day_of_month = null
+      }
+
+      const { data, error } = await supabase
+        .from('recurring_transactions')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error || !data) return
+
+      setRecurringList((prev) => prev.map((r) => (r.id === id ? data : r)))
+      setEditingRecurringId(null)
+    } finally {
+      setSavingRecurring(false)
     }
-
-    if (editRecurringCycle === 'monthly') {
-      payload.day_of_month = editRecurringDayOfMonth
-      payload.day_of_week = null
-    } else {
-      payload.day_of_week = editRecurringDayOfWeek
-      payload.day_of_month = null
-    }
-
-    const { data, error } = await supabase
-      .from('recurring_transactions')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error || !data) return
-
-    setRecurringList((prev) => prev.map((r) => (r.id === id ? data : r)))
-    setEditingRecurringId(null)
   }
 
   // Profile
@@ -447,9 +457,11 @@ export default function MyPage() {
                 <div className="flex gap-2">
                   <select
                     value={newRecurringType}
-                    onChange={(e) =>
-                      setNewRecurringType(e.target.value as 'income' | 'expense')
-                    }
+                    onChange={(e) => {
+                      const nextType = e.target.value as 'income' | 'expense';
+                      setNewRecurringType(nextType);
+                      setNewRecurringCategoryId(null);
+                    }}
                     className="border rounded px-2 py-1"
                   >
                     <option value="income">収入</option>
@@ -459,7 +471,12 @@ export default function MyPage() {
                   <input
                     placeholder="金額"
                     value={newRecurringAmount}
-                    onChange={(e) => setNewRecurringAmount(e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (/^\d*$/.test(v)) {
+                        setNewRecurringAmount(v);
+                      }
+                    }}
                     className="border rounded px-2 py-1 w-32"
                   />
 
@@ -536,7 +553,14 @@ export default function MyPage() {
 
                 <button
                   onClick={handleAddRecurring}
-                  className="rounded px-4 py-1.5 text-sm border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
+                  disabled={editingRecurringId !== null}
+                  className={`
+                    rounded px-4 py-1.5 text-sm
+                    ${editingRecurringId !== null
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'border border-green-400 text-green-600 hover:bg-green-500 hover:text-white'
+                    }
+                  `}
                 >
                   追加
                 </button>
@@ -576,7 +600,12 @@ export default function MyPage() {
 
                               <input
                                 value={editRecurringAmount}
-                                onChange={(e) => setEditRecurringAmount(e.target.value)}
+                                onChange={(e) => {
+                                  const v = e.target.value
+                                  if (/^\d*$/.test(v)) {
+                                    setEditRecurringAmount(v)
+                                  }
+                                  }}
                                 className="border rounded px-2 py-1 w-32"
                                 placeholder="金額"
                               />
@@ -649,7 +678,12 @@ export default function MyPage() {
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleUpdateRecurring(r.id)}
-                                className="rounded px-4 py-1.5 text-sm border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
+                                disabled={savingRecurring}
+                                className={`rounded px-4 py-1.5 text-sm
+                                  ${savingRecurring
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : 'border border-green-400 text-green-600 hover:bg-green-500 hover:text-white'
+                                  }`}
                               >
                                 保存
                               </button>
@@ -680,7 +714,7 @@ export default function MyPage() {
                               <p className="text-sm text-gray-500">
                                 カテゴリ：
                                 {r.category_id
-                                  ? categories.find((c) => c.id === r.category_id)?.name ?? '不明'
+                                  ? categories.find((c) => c.id === r.category_id)?.name ?? '削除済み'
                                   : '未設定'}
                               </p>
                             </div>
@@ -688,25 +722,39 @@ export default function MyPage() {
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => startEditRecurring(r)}
-                                className="text-xs px-2 py-1 rounded transition border border-blue-400 text-blue-600 hover:bg-blue-500 hover:text-white"
+                                disabled={editingRecurringId !== null && editingRecurringId !== r.id}
+                                className={`text-xs px-2 py-1 rounded transition border
+                                ${editingRecurringId !== null && editingRecurringId !== r.id
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : 'border-blue-400 text-blue-600 hover:bg-blue-500 hover:text-white'
+                                  }`}
                               >
                                 編集
                               </button>
 
                               <button
                                 onClick={() => handleToggleRecurring(r.id, r.is_active)}
+                                disabled={editingRecurringId !== null && editingRecurringId !== r.id}
                                 className={`text-xs px-2 py-1 rounded transition
-                                ${r.is_active
-                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                                  }`}
+                                    ${editingRecurringId !== null && editingRecurringId !== r.id
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : r.is_active
+                                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                  }`
+                                }
                               >
                                 {r.is_active ? 'ON' : 'OFF'}
                               </button>
 
                               <button
                                 onClick={() => setDeleteRecurringTargetId(r.id)}
-                                className="text-xs px-2 py-1 rounded transition border border-red-400 text-red-600 hover:bg-red-500 hover:text-white"
+                                disabled={editingRecurringId !== null && editingRecurringId !== r.id}
+                                className={`text-xs px-2 py-1 rounded transition border
+                                  ${editingRecurringId !== null && editingRecurringId !== r.id
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : 'border-red-400 text-red-600 hover:bg-red-500 hover:text-white'
+                                  }`}
                               >
                                 削除
                               </button>
@@ -762,9 +810,14 @@ export default function MyPage() {
         title="連続収支の削除"
         description="この連続収支を完全に削除してもよろしいですか？（元に戻せません）"
         onConfirm={async () => {
-          if (!deleteRecurringTargetId) return
-          await handleDeleteRecurring(deleteRecurringTargetId)
-          setDeleteRecurringTargetId(null)
+          if (!deleteRecurringTargetId || deletingRecurring) return
+          setDeletingRecurring(true)
+          try {
+            await handleDeleteRecurring(deleteRecurringTargetId)
+          } finally {
+            setDeletingRecurring(false)
+            setDeleteRecurringTargetId(null)
+          }
         }}
       />
     </main>
