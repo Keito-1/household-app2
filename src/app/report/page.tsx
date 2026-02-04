@@ -14,6 +14,7 @@ import { ALL_JPY, CURRENCIES } from '@/types/currency'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ReportHeader from './components/ReportHeader'
 import SummarySection from './components/SummarySection'
+import ChartSection from './components/ChartSection'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import {
@@ -247,6 +248,32 @@ export default function ReportPage() {
 
           const balance = income - expense
 
+          const expenseAgg = baseTransactions
+            .filter((t) => t.type === 'expense')
+            .reduce((acc: Record<string, number>, t: any) => {
+              const key = t.category?.name ?? '未分類'
+              acc[key] = (acc[key] ?? 0) + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
+              return acc
+            }, {})
+
+          const expensePieData = Object.keys(expenseAgg).map((k) => ({
+            name: k,
+            value: expenseAgg[k],
+          }))
+
+          const incomeAgg = baseTransactions
+            .filter((t) => t.type === 'income')
+            .reduce((acc: Record<string, number>, t: any) => {
+              const key = t.category?.name ?? '未分類'
+              acc[key] = (acc[key] ?? 0) + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
+              return acc
+            }, {})
+
+          const incomePieData = Object.keys(incomeAgg).map((k) => ({
+            name: k,
+            value: incomeAgg[k],
+          }))
+
           const barChartData = buildBarChartData(
             baseTransactions as any[],
             isAllJPY,
@@ -261,139 +288,11 @@ export default function ReportPage() {
                 balance={balance}
               />
 
-              {/* ===== 貯金額推移（棒グラフ） ===== */}
-              <Card className="bg-white shadow-lg mb-6">
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">
-                    貯金額推移
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={barChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="balance" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* ===== 円グラフ ===== */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="bg-white shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500">
-                      支出（カテゴリ別）
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <PieChart>
-                        <Pie
-                          data={Object.values(
-                            baseTransactions
-                              .filter((t) => t.type === 'expense')
-                              .reduce((acc: any, t: any) => {
-                                const key = t.category?.name ?? '未分類'
-                                acc[key] =
-                                  (acc[key] ?? 0) +
-                                  (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
-                                return acc
-                              }, {})
-                          ).map((v, i) => ({
-                            name: Object.keys(
-                              baseTransactions
-                                .filter((t) => t.type === 'expense')
-                                .reduce((acc: any, t: any) => {
-                                  acc[t.category?.name ?? '未分類'] = true
-                                  return acc
-                                }, {})
-                            )[i],
-                            value: v,
-                          }))}
-                          dataKey="value"
-                          nameKey="name"
-                          outerRadius={80}
-                          label
-                        >
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <Cell
-                              key={i}
-                              fill={[
-                                '#f97316',
-                                '#ef4444',
-                                '#eab308',
-                                '#22c55e',
-                                '#3b82f6',
-                              ][i % 5]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500">
-                      収入（カテゴリ別）
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <PieChart>
-                        <Pie
-                          data={Object.values(
-                            baseTransactions
-                              .filter((t) => t.type === 'income')
-                              .reduce((acc: any, t: any) => {
-                                const key = t.category?.name ?? '未分類'
-                                acc[key] =
-                                  (acc[key] ?? 0) +
-                                  (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
-                                return acc
-                              }, {})
-                          ).map((v, i) => ({
-                            name: Object.keys(
-                              baseTransactions
-                                .filter((t) => t.type === 'income')
-                                .reduce((acc: any, t: any) => {
-                                  acc[t.category?.name ?? '未分類'] = true
-                                  return acc
-                                }, {})
-                            )[i],
-                            value: v,
-                          }))}
-                          dataKey="value"
-                          nameKey="name"
-                          outerRadius={80}
-                          label
-                        >
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <Cell
-                              key={i}
-                              fill={[
-                                '#22c55e',
-                                '#3b82f6',
-                                '#a855f7',
-                                '#ec4899',
-                                '#14b8a6',
-                              ][i % 5]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
+              <ChartSection
+                barChartData={barChartData}
+                expensePieData={expensePieData}
+                incomePieData={incomePieData}
+              />
             </TabsContent>
           )
         })}
