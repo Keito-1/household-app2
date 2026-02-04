@@ -1,202 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import dayjs from 'dayjs'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore' 
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
-import { useAuth } from '@/contexts/AuthContext'
-
-import type { Transaction } from '@/types/transaction'
-import { ALL_JPY, CURRENCIES } from '@/types/currency'
-
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ReportHeader from './components/ReportHeader'
 import SummarySection from './components/SummarySection'
 import ChartSection from './components/ChartSection'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ALL_JPY, CURRENCIES } from '@/types/currency'
+import { useReport } from '@/hooks/report/useReport'
 
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from 'recharts'
-
-dayjs.extend(isSameOrBefore)
-
-/* =====================
-   Page
-===================== */
 export default function ReportPage() {
-  const router = useRouter()
-  const { user } = useAuth()
+  const { currentPeriod, setCurrentPeriod, reportData, fxMeta } = useReport()
 
-  const [currentMonth, setCurrentMonth] = useState(dayjs())
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [exchangeRates, setExchangeRates] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-
-  const selectedDate = currentMonth.endOf('month').format('YYYY-MM-DD')
-
-  /* =====================
-     取引取得
-  ===================== */
-  const fetchTransactions = async () => {
-    if (!user) {
-      router.push('/signin')
-      return
-    }
-
-    setLoading(true)
-
-    const start = currentMonth.startOf('month').format('YYYY-MM-DD')
-    const end = currentMonth.endOf('month').format('YYYY-MM-DD')
-
-    const { data } = await supabase
-      .from('transactions')
-      .select('*, category: categories(name)')
-      .gte('date', start)
-      .lte('date', end)
-
-    setTransactions((data ?? []) as Transaction[])
-    setLoading(false)
-  }
-
-  /* =====================
-     為替取得
-  ===================== */
-  const fetchExchangeRates = async () => {
-    const start = currentMonth.startOf('month').format('YYYY-MM-DD')
-    const end = currentMonth.endOf('month').format('YYYY-MM-DD')
-
-    const { data } = await supabase
-      .from('exchange_rates')
-      .select('rate_date, target_currency, rate')
-      .gte('rate_date', start)
-      .lte('rate_date', end)
-
-    setExchangeRates(data ?? [])
-  }
-
-  useEffect(() => {
-    fetchTransactions()
-    fetchExchangeRates()
-  }, [currentMonth, user])
-
-  /* =====================
-     🔥 日次レート換算（唯一の追加ロジック）
-     UIには一切影響しない
-  ===================== */
-  const transactionsWithJPY = useMemo(() => {
-    return transactions.map((t) => {
-      if (t.currency === 'JPY') {
-        return { ...t, amount_jpy: t.amount }
-      }
-
-      const rate = exchangeRates
-        .filter(
-          (r) =>
-            r.target_currency === t.currency &&
-            r.rate_date <= t.date
-        )
-        .sort((a, b) => b.rate_date.localeCompare(a.rate_date))[0]
-
-      return {
-        ...t,
-        amount_jpy: rate ? Math.round(t.amount / rate.rate) : 0,
-        used_rate_date: rate?.rate_date ?? null,
-      }
-    })
-  }, [transactions, exchangeRates])
-
-  /* =====================
-     フォールバック表示用メタ
-  ===================== */
-  const fxMeta = useMemo(() => {
-    if (exchangeRates.length === 0) return null
-
-    const selected = dayjs(selectedDate)
-
-    // selectedDate(=月末日) 以前で取得できている「最新の為替日」を日付として求める
-    const latestRateDate = exchangeRates
-      .map((r) => r.rate_date)
-      .filter(Boolean)
-      .filter((d) => dayjs(d).isValid() && dayjs(d).isSameOrBefore(selected))
-      .sort((a, b) => dayjs(a).valueOf() - dayjs(b).valueOf())
-      .at(-1)
-
-    if (!latestRateDate) return null
-
-    return {
-      rate_date: latestRateDate,
-    }
-  }, [exchangeRates, selectedDate])
-
-  /* =====================
-     集計（JPY換算後）
-  ===================== */
-  const totalIncomeJPY = useMemo(
-    () =>
-      transactionsWithJPY
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + (t.amount_jpy ?? 0), 0),
-    [transactionsWithJPY]
-  )
-
-  const totalExpenseJPY = useMemo(
-    () =>
-      transactionsWithJPY
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + (t.amount_jpy ?? 0), 0),
-    [transactionsWithJPY]
-  )
-
-  const balanceJPY = totalIncomeJPY - totalExpenseJPY
-
-  //  貯金額推移（累積）を作る関数（タブごとに使う）
-  const buildBarChartData = (
-    baseTransactions: any[],
-    isAllJPY: boolean,
-    currentMonth: dayjs.Dayjs
-  ) => {
-    let cumulative = 0
-
-    return Array.from({ length: currentMonth.daysInMonth() }, (_, i) => {
-      const day = i + 1
-
-      const daily = baseTransactions.filter(
-        (t) => dayjs(t.date).date() === day
-      )
-
-      const dailyIncome = daily
-        .filter((t) => t.type === 'income')
-        .reduce((s, t) => s + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount), 0)
-
-      const dailyExpense = daily
-        .filter((t) => t.type === 'expense')
-        .reduce((s, t) => s + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount), 0)
-
-      // ✅ ここがポイント：日ごとの収支を「累積」する
-      cumulative += dailyIncome - dailyExpense
-
-      return { day, balance: cumulative }
-    })
-  }
+  const selectedDate = currentPeriod.endOf('month').format('YYYY-MM-DD')
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-12">
       <ReportHeader
-        currentPeriod={currentMonth}
-        onPrev={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}
-        onNext={() => setCurrentMonth(currentMonth.add(1, 'month'))}
+        currentPeriod={currentPeriod}
+        onPrev={() => setCurrentPeriod(currentPeriod.subtract(1, 'month'))}
+        onNext={() => setCurrentPeriod(currentPeriod.add(1, 'month'))}
       />
 
       <Tabs defaultValue="JPY">
@@ -220,83 +41,38 @@ export default function ReportPage() {
 
         {fxMeta?.rate_date && fxMeta.rate_date !== selectedDate && (
           <p className="text-xs text-orange-500 mb-2">
-            ※指定日({selectedDate})の為替が無いため、
-            直近営業日のレート({fxMeta.rate_date})を使用しています
+            ※指定日({selectedDate})の為替が無いため、直近営業日のレート({fxMeta.rate_date})を使用しています
           </p>
         )}
 
         {[...CURRENCIES, ALL_JPY].map((currency) => {
-          const isAllJPY = currency === ALL_JPY
-
-          const baseTransactions = isAllJPY
-            ? transactionsWithJPY
-            : transactions.filter((t) => t.currency === currency)
-
-          const income = baseTransactions
-            .filter((t) => t.type === 'income')
-            .reduce(
-              (sum, t) => sum + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount),
-              0
-            )
-
-          const expense = baseTransactions
-            .filter((t) => t.type === 'expense')
-            .reduce(
-              (sum, t) => sum + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount),
-              0
-            )
-
-          const balance = income - expense
-
-          const expenseAgg = baseTransactions
-            .filter((t) => t.type === 'expense')
-            .reduce((acc: Record<string, number>, t: any) => {
-              const key = t.category?.name ?? '未分類'
-              acc[key] = (acc[key] ?? 0) + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
-              return acc
-            }, {})
-
-          const expensePieData = Object.keys(expenseAgg).map((k) => ({
-            name: k,
-            value: expenseAgg[k],
-          }))
-
-          const incomeAgg = baseTransactions
-            .filter((t) => t.type === 'income')
-            .reduce((acc: Record<string, number>, t: any) => {
-              const key = t.category?.name ?? '未分類'
-              acc[key] = (acc[key] ?? 0) + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
-              return acc
-            }, {})
-
-          const incomePieData = Object.keys(incomeAgg).map((k) => ({
-            name: k,
-            value: incomeAgg[k],
-          }))
-
-          const barChartData = buildBarChartData(
-            baseTransactions as any[],
-            isAllJPY,
-            currentMonth
-          )
+          const data = reportData[currency] ?? {
+            baseTransactions: [],
+            income: 0,
+            expense: 0,
+            balance: 0,
+            expensePieData: [],
+            incomePieData: [],
+            barChartData: [],
+          }
 
           return (
             <TabsContent key={currency} value={currency}>
               <SummarySection
-                totalIncome={income}
-                totalExpense={expense}
-                balance={balance}
+                totalIncome={data.income}
+                totalExpense={data.expense}
+                balance={data.balance}
               />
 
               <ChartSection
-                barChartData={barChartData}
-                expensePieData={expensePieData}
-                incomePieData={incomePieData}
+                barChartData={data.barChartData}
+                expensePieData={data.expensePieData}
+                incomePieData={data.incomePieData}
               />
             </TabsContent>
           )
         })}
       </Tabs>
-    </div >
+    </div>
   )
 }
