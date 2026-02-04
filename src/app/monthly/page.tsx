@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 import { Button } from '@/components/ui/button'
-import TransactionModal from '@/components/TransactionModal'
-import CalendarGrid from '@/components/CalendarGrid'
+import MonthlyHeader from './components/MonthlyHeader'
+import TransactionModal from '@/app/monthly/components/TransactionModal'
+import CalendarGrid from '@/app/monthly/components/CalendarGrid'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -158,21 +159,11 @@ export default function MonthlyPage() {
   return (
     <main className="mx-auto max-w-5xl p-4 bg-gray-200 text-black">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <Button variant="ghost"
-          className="text-2xl font-bold"
-          onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}>
-          ‹
-        </Button>
-        <h1 className="text-lg font-semibold">
-          {currentMonth.format('MMMM YYYY')}
-        </h1>
-        <Button variant="ghost"
-          className="text-2xl font-bold"
-          onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}>
-          ›
-        </Button>
-      </div>
+      <MonthlyHeader
+        currentMonth={currentMonth}
+        onPrev={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}
+        onNext={() => setCurrentMonth(currentMonth.add(1, 'month'))}
+      />
 
       <CalendarGrid
         currentMonth={currentMonth}
