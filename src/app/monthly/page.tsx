@@ -80,7 +80,6 @@ export default function MonthlyPage() {
           setNewAmount('')
           setNewCurrency('JPY')
           setNewType('expense')
-          setIsOpen(false)
         }}
         editingId={editingId}
         editCategoryId={editCategoryId}

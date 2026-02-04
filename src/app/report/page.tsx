@@ -12,6 +12,7 @@ import { ALL_JPY, CURRENCIES } from '@/types/currency'
 
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import ReportHeader from './components/ReportHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import {
@@ -190,24 +191,11 @@ export default function ReportPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-12">
-      {/* 月切り替え */}
-      <div className="flex items-center justify-center justify-between my-6">
-        <button
-          onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}
-          className="text-xl"
-        >
-          ‹
-        </button>
-        <h2 className="text-xl font-semibold">
-          {currentMonth.format('YYYY年 M月')} 月間レポート
-        </h2>
-        <button
-          onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}
-          className="text-xl"
-        >
-          ›
-        </button>
-      </div>
+      <ReportHeader
+        currentPeriod={currentMonth}
+        onPrev={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}
+        onNext={() => setCurrentMonth(currentMonth.add(1, 'month'))}
+      />
 
       <Tabs defaultValue="JPY">
         <TabsList className="flex flex-wrap gap-2 mb-4">
