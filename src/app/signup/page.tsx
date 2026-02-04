@@ -85,7 +85,7 @@ export default function SignupPage() {
 
           {/* Button */}
           <Button
-            className="w-full"
+            className="w-full border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
             onClick={handleSignup}
             disabled={loading}
           >

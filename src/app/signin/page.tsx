@@ -102,7 +102,7 @@ export default function SigninPage() {
 
           {/* Signin Button */}
           <Button
-            className="w-full"
+            className="w-full border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
             onClick={handleSignin}
             disabled={loading}
           >
@@ -119,7 +119,7 @@ export default function SigninPage() {
           {/* Google Login Button */}
           <Button
             variant="outline"
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2 border border-orange-400 text-orange-600 hover:bg-orange-500 hover:text-white"
             onClick={handleGoogleSignin}
             disabled={loading}
           >
