@@ -5,4 +5,6 @@ export interface Category {
   user_id: string
   name: string
   type: TransactionType
+  is_active: boolean
+  sort_order: number
 }

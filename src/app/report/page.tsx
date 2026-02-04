@@ -144,7 +144,7 @@ export default function ReportPage() {
     () =>
       transactionsWithJPY
         .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount_jpy, 0),
+        .reduce((sum, t) => sum + (t.amount_jpy ?? 0), 0),
     [transactionsWithJPY]
   )
 
@@ -152,7 +152,7 @@ export default function ReportPage() {
     () =>
       transactionsWithJPY
         .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount_jpy, 0),
+        .reduce((sum, t) => sum + (t.amount_jpy ?? 0), 0),
     [transactionsWithJPY]
   )
 
@@ -175,11 +175,11 @@ export default function ReportPage() {
 
       const dailyIncome = daily
         .filter((t) => t.type === 'income')
-        .reduce((s, t) => s + (isAllJPY ? t.amount_jpy : t.amount), 0)
+        .reduce((s, t) => s + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount), 0)
 
       const dailyExpense = daily
         .filter((t) => t.type === 'expense')
-        .reduce((s, t) => s + (isAllJPY ? t.amount_jpy : t.amount), 0)
+        .reduce((s, t) => s + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount), 0)
 
       // ✅ ここがポイント：日ごとの収支を「累積」する
       cumulative += dailyIncome - dailyExpense
@@ -245,14 +245,14 @@ export default function ReportPage() {
           const income = baseTransactions
             .filter((t) => t.type === 'income')
             .reduce(
-              (sum, t) => sum + (isAllJPY ? t.amount_jpy : t.amount),
+              (sum, t) => sum + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount),
               0
             )
 
           const expense = baseTransactions
             .filter((t) => t.type === 'expense')
             .reduce(
-              (sum, t) => sum + (isAllJPY ? t.amount_jpy : t.amount),
+              (sum, t) => sum + (isAllJPY ? (t.amount_jpy ?? 0) : t.amount),
               0
             )
 
@@ -342,7 +342,7 @@ export default function ReportPage() {
                                 const key = t.category?.name ?? '未分類'
                                 acc[key] =
                                   (acc[key] ?? 0) +
-                                  (isAllJPY ? t.amount_jpy : t.amount)
+                                  (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
                                 return acc
                               }, {})
                           ).map((v, i) => ({
@@ -397,7 +397,7 @@ export default function ReportPage() {
                                 const key = t.category?.name ?? '未分類'
                                 acc[key] =
                                   (acc[key] ?? 0) +
-                                  (isAllJPY ? t.amount_jpy : t.amount)
+                                  (isAllJPY ? (t.amount_jpy ?? 0) : t.amount)
                                 return acc
                               }, {})
                           ).map((v, i) => ({
