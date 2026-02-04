@@ -13,6 +13,7 @@ import { ALL_JPY, CURRENCIES } from '@/types/currency'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ReportHeader from './components/ReportHeader'
+import SummarySection from './components/SummarySection'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import {
@@ -254,41 +255,11 @@ export default function ReportPage() {
 
           return (
             <TabsContent key={currency} value={currency}>
-              {/* ===== Cards ===== */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Card className="bg-white shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500">
-                      収入
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-xl font-bold text-green-600">
-                    {income.toLocaleString()} {isAllJPY ? 'JPY' : currency}
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500">
-                      支出
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-xl font-bold text-red-600">
-                    {expense.toLocaleString()} {isAllJPY ? 'JPY' : currency}
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500">
-                      収支（貯金額）
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-xl font-bold text-blue-600">
-                    {balance.toLocaleString()} {isAllJPY ? 'JPY' : currency}
-                  </CardContent>
-                </Card>
-              </div>
+              <SummarySection
+                totalIncome={income}
+                totalExpense={expense}
+                balance={balance}
+              />
 
               {/* ===== 貯金額推移（棒グラフ） ===== */}
               <Card className="bg-white shadow-lg mb-6">
