@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import MonthlyHeader from './components/MonthlyHeader'
 import TransactionModal from '@/app/monthly/components/TransactionModal'
-import CalendarGrid from '@/app/monthly/components/CalendarGrid'
+import MonthlyCalendar from './components/MonthlyCalendar'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -78,14 +78,7 @@ export default function MonthlyPage() {
     fetchTransactions()
   }, [currentMonth, user])
 
-  // Calendar helpers
-  const calendarDays = useMemo(() => {
-    const start = currentMonth.startOf('month').startOf('week')
-    return Array.from({ length: 42 }, (_, i) => start.add(i, 'day'))
-  }, [currentMonth])
-
-  const dayTx = (ymd: string): Transaction[] =>
-    transactions.filter((t) => t.date === ymd)
+  // Calendar helpers are moved into MonthlyCalendar
 
   // Handlers
   const openModal = (d: dayjs.Dayjs) => {
@@ -165,19 +158,17 @@ export default function MonthlyPage() {
         onNext={() => setCurrentMonth(currentMonth.add(1, 'month'))}
       />
 
-      <CalendarGrid
+      <MonthlyCalendar
         currentMonth={currentMonth}
-        calendarDays={calendarDays}
+        transactions={transactions}
         onSelectDate={openModal}
-        dayHasExpense={(ymd) => dayTx(ymd).some((t) => t.type === 'expense')}
-        dayHasIncome={(ymd) => dayTx(ymd).some((t) => t.type === 'income')}
       />
 
       <TransactionModal
         open={isOpen}
         onOpenChange={setIsOpen}
         selectedDate={selectedDate}
-        transactions={dayTx(selectedDate)}
+        transactions={transactions.filter((t) => t.date === selectedDate)}
         categories={activeCategories}
 
         newCategoryId={newCategoryId}
