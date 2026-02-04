@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCategories } from '@/hooks/mypage/useCategories'
 import { useRecurring } from '@/hooks/mypage/useRecurring'
+import { useProfile } from '@/hooks/mypage/useProfile'
 import { Sidebar } from './components/Sidebar'
 import { CategoryList } from './components/CategoryList'
 import { InactiveCategoryList } from './components/InactiveCategoryList'
@@ -20,8 +20,7 @@ export default function MyPage() {
 
   const [view, setView] = useState<MyPageView>('categories')
 
-  const [email, setEmail] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  // profile state handled by useProfile
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   // useCategories hook
@@ -84,16 +83,9 @@ export default function MyPage() {
     deleteRecurringTargetId,
     setDeleteRecurringTargetId,
   } = useRecurring(user)
+  const { email, displayName, setDisplayName, saveProfile } = useProfile(user)
 
-  // Profile
-  useEffect(() => {
-    if (view !== 'profile') return
-
-    if (!user) return
-
-    setEmail(user.email ?? '')
-    setDisplayName(user.user_metadata?.name ?? '')
-  }, [view, user])
+  // Profile initialization is handled inside useProfile
 
   // Recurring
   useEffect(() => {
@@ -194,12 +186,7 @@ export default function MyPage() {
               email={email}
               displayName={displayName}
               onDisplayNameChange={setDisplayName}
-              onSave={async () => {
-                await supabase.auth.updateUser({
-                  data: { name: displayName },
-                })
-                alert('更新しました')
-              }}
+              onSave={saveProfile}
             />
           )}
 

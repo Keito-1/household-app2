@@ -95,6 +95,7 @@ export function useRecurring(
 
   // Fetch Recurring
   const fetchRecurring = useCallback(async () => {
+    if (!user) return
     setRecurringLoading(true)
 
     const { data, error } = await supabase
@@ -107,7 +108,7 @@ export function useRecurring(
     }
 
     setRecurringLoading(false)
-  }, [])
+  }, [user])
 
   // Add Recurring
   const handleAddRecurring = async () => {
