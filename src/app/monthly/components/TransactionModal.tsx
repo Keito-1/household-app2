@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * MonthlyPage 専用の取引入力・編集・削除モーダル
+ * 状態管理は親(monthly/page.tsx)に委譲し、UI表示とイベント通知に特化
+ */
+
 import dayjs from 'dayjs'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,24 +25,30 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-
 import type { Transaction, TxType } from '@/types/transaction'
 import type { Category } from '@/types/category'
 
-type ModalTransaction = Pick<
+/**
+ * モーダル内で表示・操作対象となる取引情報
+ */
+type MonthlyTransaction = Pick<
   Transaction,
   'id' | 'amount' | 'currency' | 'type' | 'category_id'
 >
 
+/**
+ * Monthly 専用 TransactionModal の Props
+ * 親(monthly/page.tsx)で管理された状態・ハンドラーをそのまま受け渡す設計
+ */
 type Props = {
   open: boolean
   onOpenChange: (v: boolean) => void
   selectedDate: string
 
-  transactions: ModalTransaction[]
+  transactions: MonthlyTransaction[]
   categories: Category[]
 
-  // add
+  // Add form state
   newCategoryId: string
   setNewCategoryId: (v: string) => void
   newAmount: string
@@ -48,7 +59,7 @@ type Props = {
   setNewType: (v: TxType) => void
   onAdd: () => void
 
-  // edit
+  // Edit state
   editingId: string | null
   editCategoryId: string
   setEditCategoryId: (v: string) => void
@@ -58,12 +69,18 @@ type Props = {
   setEditCurrency: (v: string) => void
   editType: TxType
   setEditType: (v: TxType) => void
-  onStartEdit: (t: ModalTransaction) => void
+  onStartEdit: (t: MonthlyTransaction) => void
   onUpdate: () => void
   onDelete: (id: string) => void
 }
 
-export default function TransactionModal(props: Props) {
+/**
+ * Monthly 専用 TransactionModal
+ * - add / edit / delete の CRUD 操作を親経由で実行
+ * - UI 表示とイベント通知に専念（supabase 呼び出しなし）
+ * - 状態変更は全て親の handler に委譲
+ */
+function TransactionModal(props: Props) {
   const {
     open,
     onOpenChange,
@@ -104,7 +121,7 @@ export default function TransactionModal(props: Props) {
           </DialogTitle>
         </DialogHeader>
 
-        {/* Add / Edit */}
+        {/* Add / Edit form */}
         <div className="space-y-2">
           <Label>カテゴリ</Label>
 
@@ -191,10 +208,11 @@ export default function TransactionModal(props: Props) {
 
           {editingId ? (
             <div className="flex gap-2">
-              <Button 
-              variant="outline"
-              className="flex-1 border-gray-200 text-green-500 hover:bg-green-500 hover:text-white"
-              onClick={onUpdate}>
+              <Button
+                variant="outline"
+                className="flex-1 border-gray-200 text-green-500 hover:bg-green-500 hover:text-white"
+                onClick={onUpdate}
+              >
                 更新
               </Button>
               <Button
@@ -214,7 +232,7 @@ export default function TransactionModal(props: Props) {
 
         <Separator className="my-3" />
 
-        {/* List */}
+        {/* Transactions list for selected date */}
         <ScrollArea className="flex-1">
           <div className="space-y-2 pr-2">
             {transactions.map((t) => {
@@ -268,3 +286,5 @@ export default function TransactionModal(props: Props) {
     </Dialog>
   )
 }
+
+export default TransactionModal
