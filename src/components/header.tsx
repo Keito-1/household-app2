@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 
+
 const navItems = [
   { label: 'Monthly', href: '/monthly' },
   { label: 'Report', href: '/report' },
@@ -21,6 +22,11 @@ export default function Header() {
 
   // 認証状態確定前は何も描画しない（チラつき防止）
   if (loading) return null
+
+    // サインイン・サインアップでは Header を出さない
+  if (pathname === '/signin' || pathname === '/signup') {
+    return null
+  }
 
   const handleSignout = async () => {
     await supabase.auth.signOut()

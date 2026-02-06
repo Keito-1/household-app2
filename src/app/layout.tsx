@@ -3,7 +3,6 @@ import "./globals.css";
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -15,16 +14,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = headers().get('x-pathname')
-
-  const hideHeader =
-    pathname === '/signin' || pathname === '/signup'
-
   return (
     <html lang="ja">
       <body className="bg-gray-200 min-h-screen">
         <AuthProvider>
-          {!hideHeader && <Header />}
+          <Header />
           {children}
           <Toaster />
         </AuthProvider>
