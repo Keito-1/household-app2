@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -22,17 +12,19 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const pathname = headers().get('x-pathname')
+
+  const hideHeader =
+    pathname === '/signin' || pathname === '/signup'
+
   return (
     <html lang="ja">
-      <body
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-200 min-h-screen`}
-      >
+      <body className="bg-gray-200 min-h-screen">
         <AuthProvider>
-          <Header />
+          {!hideHeader && <Header />}
           {children}
           <Toaster />
         </AuthProvider>
