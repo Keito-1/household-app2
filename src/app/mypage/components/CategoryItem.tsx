@@ -27,7 +27,7 @@ export function CategoryItem({
   onDelete,
 }: Props) {
   return (
-    <div className="flex items-center justify-between rounded border p-2">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-gray-200 p-2">
       {isEditing ? (
         <Input
           value={editName}
@@ -37,7 +37,7 @@ export function CategoryItem({
         <span>{category.name}</span>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         {isEditing ? (
           <>
             <Button
@@ -51,7 +51,7 @@ export function CategoryItem({
               size="sm"
               variant="outline"
               onClick={onCancel}
-              className='border-red-400 text-red-600 hover:bg-red-500 hover:text-white'
+              className='flex flex-wrap gap-2 border-red-400 text-red-600 hover:bg-red-500 hover:text-white'
             >
               キャンセル
             </Button>

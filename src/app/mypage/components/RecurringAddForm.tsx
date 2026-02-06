@@ -47,7 +47,7 @@ export function RecurringAddForm({
     <div className="mb-6 rounded border bg-white p-4 shadow-sm space-y-4">
       <h3 className="font-medium text-gray-600">連続収支を追加</h3>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <select
           value={newRecurringType}
           onChange={(e) => {
@@ -55,7 +55,7 @@ export function RecurringAddForm({
             onTypeChange(nextType)
             onCategoryIdChange(null)
           }}
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full sm:w-auto"
         >
           <option value="income">収入</option>
           <option value="expense">支出</option>
@@ -70,7 +70,7 @@ export function RecurringAddForm({
               onAmountChange(v)
             }
           }}
-          className="border rounded px-2 py-1 w-32"
+          className="border rounded px-2 py-1 w-32 sm:w-auto"
         />
 
         <select
@@ -84,7 +84,7 @@ export function RecurringAddForm({
         </select>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <select
           value={newRecurringCycle}
           onChange={(e) =>

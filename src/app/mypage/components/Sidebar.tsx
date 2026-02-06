@@ -9,12 +9,12 @@ type Props = {
 
 export function Sidebar({ view, setView }: Props) {
   return (
-    <aside className="w-48 shrink-0 space-y-2 bg-gray-100 p-4 shadow">
+    <aside className="w-full md:w-48 flex md:block gap-2 overflow-x-auto shrink-0 bg-gray-100 p-2 md:p-4">
       {(['categories', 'inactive', 'recurring', 'profile'] as MyPageView[]).map((v) => (
         <button
           key={v}
           onClick={() => setView(v)}
-          className={`w-full rounded px-3 py-2 text-left transition
+          className={`min-w-[140px] md:w-full rounded px-3 py-2 text-left whitespace-nowrap
             ${view === v
               ? 'bg-gray-500 text-white'
               : 'bg-white text-black hover:bg-gray-500 hover:text-white'

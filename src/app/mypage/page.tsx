@@ -97,7 +97,7 @@ export default function MyPage() {
     <main className="p-4">
       <h1 className="mb-6 text-xl font-semibold text-center">マイページ</h1>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <Sidebar view={view} setView={setView} />
 

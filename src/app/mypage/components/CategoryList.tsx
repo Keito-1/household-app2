@@ -42,16 +42,17 @@ export function CategoryList({
     <>
       <h2 className="mb-2 font-semibold">カテゴリ管理</h2>
 
-      <div className="mb-4 flex gap-2 items-center">
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
         <Input
           placeholder="カテゴリ名"
           value={newName}
+          className="w-full sm:w-auto"
           onChange={(e) => onNewNameChange(e.target.value)}
         />
 
         <Button
           onClick={onAdd}
-          className="border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
+          className="w-full sm:w-auto border border-green-400 text-green-600 hover:bg-green-500 hover:text-white"
         >
           追加
         </Button>
@@ -59,7 +60,7 @@ export function CategoryList({
 
       <Separator className="my-4" />
 
-      <div className="mb-4 flex">
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
         {(['expense', 'income'] as Category['type'][]).map((t) => (
           <button
             key={t}

@@ -26,12 +26,12 @@ export function InactiveCategoryList({
       <h2 className="mb-4 font-semibold">非表示カテゴリ</h2>
 
       {/* 支出 / 収入 切り替え */}
-      <div className="mb-4 flex">
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
         {(['expense', 'income'] as Category['type'][]).map((t) => (
           <button
             key={t}
             onClick={() => onTypeChange(t)}
-            className={`px-4 py-2 border transition
+            className={`w-full sm:w-auto px-4 py-2 border transition
               ${activeType === t
                 ? 'bg-gray-500 text-white'
                 : 'bg-white text-black hover:bg-gray-500 hover:text-white'

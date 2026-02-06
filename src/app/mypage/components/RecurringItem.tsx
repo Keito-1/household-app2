@@ -64,7 +64,7 @@ export function RecurringItem({
         // ===== 編集モード =====
         <div className="space-y-3">
           <h2 className='text-lg font-semibold text-black'>編集画面</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <select
               value={editRecurringType}
               onChange={(e) => {
@@ -101,13 +101,13 @@ export function RecurringItem({
             </select>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <select
               value={editRecurringCycle}
               onChange={(e) =>
                 onEditCycleChange(e.target.value as 'monthly' | 'weekly')
               }
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 w-full sm:w-auto"
             >
               <option value="monthly">毎月</option>
               <option value="weekly">毎週</option>
@@ -121,7 +121,7 @@ export function RecurringItem({
                 onChange={(e) =>
                   onEditDayOfMonthChange(Number(e.target.value))
                 }
-                className="border rounded px-2 py-1 w-24"
+                className="border rounded px-2 py-1 w-full sm:w-24"
               />
             ) : (
               <select
@@ -129,7 +129,7 @@ export function RecurringItem({
                 onChange={(e) =>
                   onEditDayOfWeekChange(Number(e.target.value))
                 }
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 w-full sm:w-auto"
               >
                 {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
                   <option key={i} value={i}>{d}</option>
@@ -141,7 +141,7 @@ export function RecurringItem({
               onChange={(e) =>
                 onEditCategoryIdChange(e.target.value || null)
               }
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 w-full sm:w-auto"
             >
               <option value="">カテゴリなし</option>
               {categories
@@ -155,7 +155,7 @@ export function RecurringItem({
 
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-2 justify-end">
             <button
               onClick={onSave}
               disabled={savingRecurring}
@@ -196,7 +196,7 @@ export function RecurringItem({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 justify-end items-center">
             <button
               onClick={onStartEdit}
               disabled={disableActions}
