@@ -121,7 +121,7 @@ export function RecurringList({
         disabled={editingRecurringId !== null}
       />
 
-      <div className="rounded border bg-gray-50 p-4 text-sm text-gray-500">
+      <div className="rounded border bg-gray-50 text-sm text-gray-500">
         {recurringLoading ? (
           <p className="text-sm text-gray-500">読み込み中...</p>
         ) : recurringList.length === 0 ? (
