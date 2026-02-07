@@ -40,7 +40,7 @@ export default function ReportPage() {
         </TabsList>
 
         {fxMeta?.rate_date && fxMeta.rate_date !== selectedDate && (
-          <p className="text-xs text-orange-500 mb-2">
+          <p className="text-xs text-orange-500 mt-5 mb-4 md:mt-0">
             ※指定日({selectedDate})の為替が無いため、直近営業日のレート({fxMeta.rate_date})を使用しています
           </p>
         )}
