@@ -114,7 +114,7 @@ function TransactionModal(props: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[70vh] w-[40vw] max-w-none flex-col bg-white">
+      <DialogContent className="flex flex-col bg-white h-[85vh] w-[95vw] max-w-none sm:w-[90vw] md:w-[70vw] lg:w-[40vw]">
         <DialogHeader>
           <DialogTitle>
             {dayjs(selectedDate).format('YYYY年M月D日')}
