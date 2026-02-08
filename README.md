@@ -1,39 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 家計簿アプリ（Personal Finance App）
 
-## Getting Started
+個人開発として制作した、複数通貨対応の家計簿Webアプリです。  
+月別・年別レポートや連続収支（定期収支）管理に対応しています。
 
-First, run the development server:
+---
+
+## 概要
+
+このアプリは、日々の収支を簡単に記録し、  
+**月次・年次レポートを視覚的に確認できる家計管理ツール**です。
+
+- 複数通貨（JPY / USD / AUD / EUR / GBP / CAD / NZD / PHP など）に対応
+- 為替レートを考慮した「全通貨（JPY換算）」表示
+- モバイル対応のレスポンシブUI
+
+---
+
+## 主な機能
+
+- ユーザー認証（サインアップ / ログイン）
+- カテゴリ管理（追加・編集・非表示）
+- 月次カレンダーによる収支登録
+- 連続収支（毎月・毎週の定期収支）管理
+- 月別 / 年別レポート表示
+- 為替レートを用いた通貨換算（全通貨集計）
+- モバイル・PC 両対応
+
+---
+
+## 使用技術
+
+### フロントエンド
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Recharts
+
+### バックエンド / インフラ
+- Supabase
+  - Authentication
+  - Database
+  - Row Level Security (RLS)
+
+---
+
+## 画面構成
+
+- `/signin` / `/signup`：認証画面
+- `/monthly`：月次カレンダー・収支登録
+- `/report`：期間指定レポート
+- `/yearly`：年次レポート（通貨別 / 全通貨）
+- `/mypage`：カテゴリ管理・連続収支・プロフィール
+
+---
+
+## 工夫した点
+
+- **為替レートを考慮した集計ロジック**
+  - 外貨はDBの為替テーブルを参照し、JPYに換算して合算
+- **ロジックとUIの分離**
+  - page / components / hooks に責務を分離
+- **UXを意識した操作制限**
+  - 編集中は他操作を無効化
+  - 削除時は ConfirmDialog を必須化
+- **モバイル対応**
+  - Tailwind のレスポンシブクラスを活用
+
+---
+
+## 今後の改善予定
+
+- グラフ表示のカスタマイズ
+- CSVエクスポート機能
+- ダークモード対応
+- テストコードの追加
+
+---
+
+## セットアップ方法
 
 ```bash
+# リポジトリをクローン
+git clone https://github.com/Keito-1/household-app2.git
+
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Explain
-AuthContext = 認証 + ユーザーに強く紐づくマスタデータ
