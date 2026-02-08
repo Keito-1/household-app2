@@ -16,7 +16,7 @@ export function YearlySummary({
   isPositiveBalance,
 }: YearlySummaryProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3 mb-6 mt-6">
+    <div className="grid gap-4 sm:grid-cols-3 mb-6 mt-6 sm:mt-0">
       <Card className="bg-white shadow-lg">
         <CardHeader>
           <CardTitle className="text-sm text-gray-500">年間収入</CardTitle>

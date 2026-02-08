@@ -10,7 +10,7 @@ type Props = {
 
 export default function SummarySection({ totalIncome, totalExpense, balance }: Props) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 mt-6 sm:mt-0">
       <Card className="bg-white shadow-lg">
         <CardHeader>
           <CardTitle className="text-sm text-gray-500">収入</CardTitle>
