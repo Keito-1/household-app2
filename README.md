@@ -1,4 +1,4 @@
-# 家計簿アプリ（Personal Finance App）
+# 家計簿アプリ（Household Account App）
 
 個人開発として制作した、複数通貨対応の家計簿Webアプリです。  
 月別・年別レポートや連続収支（定期収支）管理に対応しています。
