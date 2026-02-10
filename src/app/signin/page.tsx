@@ -49,7 +49,7 @@ export default function SigninPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'http://localhost:3000/monthly',
+        redirectTo: 'https://household-app2.vercel.app/monthly',
       },
     })
 
