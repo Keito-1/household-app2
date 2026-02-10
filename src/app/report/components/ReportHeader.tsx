@@ -11,7 +11,7 @@ type Props = {
 
 export default function ReportHeader({ currentPeriod, onPrev, onNext }: Props) {
   return (
-    <div className="flex items-center justify-center justify-between my-6">
+    <div className="flex items-center justify-between my-6">
       <button onClick={onPrev} className="text-xl">
         ‹
       </button>
