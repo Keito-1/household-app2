@@ -1,7 +1,7 @@
 'use client'
 
 import { CURRENCIES } from '@/types/currency'
-
+import { WEEK_DAYS } from '@/constants/date'
 import type { Category } from '@/types/category'
 
 type Props = {
@@ -114,7 +114,7 @@ export function RecurringAddForm({
             }
             className="border rounded px-2 py-1"
           >
-            {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+            {WEEK_DAYS.map((d, i) => (
               <option key={i} value={i}>{d}</option>
             ))}
           </select>

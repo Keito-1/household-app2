@@ -1,6 +1,7 @@
 'use client'
 
 import { CURRENCIES } from '@/types/currency'
+import { WEEK_DAYS } from '@/constants/date'
 
 import type { Category } from '@/types/category'
 import type { RecurringTransaction } from '@/types/recurring'
@@ -131,7 +132,7 @@ export function RecurringItem({
                 }
                 className="border rounded px-2 py-1 w-full sm:w-auto"
               >
-                {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+                {WEEK_DAYS.map((d, i) => (
                   <option key={i} value={i}>{d}</option>
                 ))}
               </select>
@@ -186,7 +187,7 @@ export function RecurringItem({
             <p className="text-sm text-gray-500">
               {recurring.cycle === 'monthly'
                 ? `毎月 ${recurring.day_of_month} 日`
-                : `毎週 ${['日', '月', '火', '水', '木', '金', '土'][recurring.day_of_week ?? 0]}`}
+                : `毎週 ${WEEK_DAYS[recurring.day_of_week ?? 0]}`}
             </p>
             <p className="text-sm text-gray-500">
               カテゴリ：
