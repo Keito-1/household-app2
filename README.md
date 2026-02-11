@@ -66,7 +66,23 @@
   - 削除時は ConfirmDialog を必須化
 - **モバイル対応**
   - Tailwind のレスポンシブクラスを活用
-
+- **supabaseによるDBのRLS Policy
+  - profiles
+    - INSERT : with check (((auth.uid() IS NOT NULL) AND (auth.uid() = id)));
+    - SELECT : using ((auth.uid() = id));
+    - UPDATE : using ( (auth.uid() = id));
+  - transactions
+    - INSERT ポリシー : with check(((auth.uid() IS NOT NULL) AND (auth.uid() = user_id)));
+    - SELECT ポリシー : using((auth.uid() = user_id));
+    - UPDATE ポリシー : using((auth.uid() = user_id));
+    - DELETE ポリシー : using( (auth.uid() = user_id));
+  -categories
+    - insert own categories : with check((auth.uid() = user_id));
+    - select own categories : using((auth.uid() = user_id));
+    - update own categories : using((auth.uid() = user_id));
+    - delete own categories : using((auth.uid() = user_id));
+  -exchange_rates
+    - exchange_rates_read : using (true);
 ---
 
 ## 今後の改善予定
