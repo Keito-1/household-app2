@@ -24,8 +24,10 @@ export function useReport() {
   const selectedDate = currentPeriod.endOf('month').format('YYYY-MM-DD')
 
   const fetchTransactions = useCallback(async () => {
+    if (loading) return
+
     if (!user) {
-      router.push('/signin')
+      router.replace('/signin')
       return
     }
 
@@ -58,6 +60,7 @@ export function useReport() {
   }, [currentPeriod])
 
   useEffect(() => {
+    if (!user) return
     fetchTransactions()
     fetchExchangeRates()
   }, [fetchTransactions, fetchExchangeRates])

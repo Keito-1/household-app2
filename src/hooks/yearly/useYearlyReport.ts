@@ -40,10 +40,11 @@ export function useYearlyReport(): YearlyReportData {
      Fetch (year)
   ===================== */
   const fetchYearlyTransactions = useCallback(async () => {
+    if (loading) return
     setLoading(true)
 
     if (!user) {
-      router.push('/signin')
+      router.replace('/signin')
       setLoading(false)
       return
     }
@@ -83,6 +84,7 @@ export function useYearlyReport(): YearlyReportData {
   }, [])
 
   useEffect(() => {
+    if (!user) return
     fetchYearlyTransactions()
     fetchExchangeRates()
   }, [fetchYearlyTransactions, fetchExchangeRates])

@@ -17,5 +17,7 @@ export default function Home() {
       router.replace('/signin');
     }
   }, [user, loading, router]);
+
+  return null;
 }
 

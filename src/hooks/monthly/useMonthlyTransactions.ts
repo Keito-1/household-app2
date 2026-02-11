@@ -26,7 +26,11 @@ export function useMonthlyTransactions(currentMonth: dayjs.Dayjs, user: User | n
    * user が null の場合は /signin にリダイレクト
    */
   const fetchTransactions = useCallback(async () => {
+  if (!user) return
+
     setLoading(true)
+    
+    if (loading) return
 
     if (!user) {
       router.push('/signin')
@@ -52,6 +56,7 @@ export function useMonthlyTransactions(currentMonth: dayjs.Dayjs, user: User | n
    * currentMonth または user 変更時に自動的に transactions を再取得
    */
   useEffect(() => {
+    if (!user) return
     fetchTransactions()
   }, [fetchTransactions])
 
