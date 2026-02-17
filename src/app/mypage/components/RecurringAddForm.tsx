@@ -2,47 +2,31 @@
 
 import { CURRENCIES } from '@/types/currency'
 import { WEEK_DAYS } from '@/constants/date'
-import type { Category } from '@/types/category'
+import { useRecurringContext } from '@/contexts/RecurringContext'
 
-type Props = {
-  newRecurringType: 'income' | 'expense'
-  onTypeChange: (type: 'income' | 'expense') => void
-  newRecurringAmount: string
-  onAmountChange: (value: string) => void
-  newRecurringCurrency: string
-  onCurrencyChange: (value: string) => void
-  newRecurringCycle: 'monthly' | 'weekly'
-  onCycleChange: (value: 'monthly' | 'weekly') => void
-  newRecurringDayOfMonth: number
-  onDayOfMonthChange: (value: number) => void
-  newRecurringDayOfWeek: number
-  onDayOfWeekChange: (value: number) => void
-  newRecurringCategoryId: string | null
-  onCategoryIdChange: (value: string | null) => void
-  categories: Category[]
-  onAdd: () => void
-  disabled: boolean
-}
+export function RecurringAddForm() {
+  const {
+    newRecurringType,
+    newRecurringAmount,
+    newRecurringCurrency,
+    newRecurringCycle,
+    newRecurringDayOfMonth,
+    newRecurringDayOfWeek,
+    newRecurringCategoryId,
 
-export function RecurringAddForm({
-  newRecurringType,
-  onTypeChange,
-  newRecurringAmount,
-  onAmountChange,
-  newRecurringCurrency,
-  onCurrencyChange,
-  newRecurringCycle,
-  onCycleChange,
-  newRecurringDayOfMonth,
-  onDayOfMonthChange,
-  newRecurringDayOfWeek,
-  onDayOfWeekChange,
-  newRecurringCategoryId,
-  onCategoryIdChange,
-  categories,
-  onAdd,
-  disabled,
-}: Props) {
+    setNewRecurringType,
+    setNewRecurringAmount,
+    setNewRecurringCurrency,
+    setNewRecurringCycle,
+    setNewRecurringDayOfMonth,
+    setNewRecurringDayOfWeek,
+    setNewRecurringCategoryId,
+
+    handleAddRecurring,
+    editingRecurringId,
+    categories,
+  } = useRecurringContext()
+
   return (
     <div className="mb-6 rounded border bg-white p-4 shadow-sm space-y-4">
       <h3 className="font-medium text-gray-600">連続収支を追加</h3>
@@ -52,8 +36,8 @@ export function RecurringAddForm({
           value={newRecurringType}
           onChange={(e) => {
             const nextType = e.target.value as 'income' | 'expense'
-            onTypeChange(nextType)
-            onCategoryIdChange(null)
+            setNewRecurringType(nextType)
+            setNewRecurringCategoryId(null)
           }}
           className="border rounded px-2 py-1 w-full sm:w-auto"
         >
@@ -67,7 +51,7 @@ export function RecurringAddForm({
           onChange={(e) => {
             const v = e.target.value
             if (/^\d*$/.test(v)) {
-              onAmountChange(v)
+              setNewRecurringAmount(v)
             }
           }}
           className="border rounded px-2 py-1 w-32 sm:w-auto"
@@ -75,7 +59,7 @@ export function RecurringAddForm({
 
         <select
           value={newRecurringCurrency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
+          onChange={(e) => setNewRecurringCurrency(e.target.value)}
           className="border rounded px-2 py-1"
         >
           {CURRENCIES.map((c) => (
@@ -88,7 +72,7 @@ export function RecurringAddForm({
         <select
           value={newRecurringCycle}
           onChange={(e) =>
-            onCycleChange(e.target.value as 'monthly' | 'weekly')
+            setNewRecurringCycle(e.target.value as 'monthly' | 'weekly')
           }
           className="border rounded px-2 py-1"
         >
@@ -100,17 +84,24 @@ export function RecurringAddForm({
           <input
             min={1}
             max={31}
-            value={newRecurringDayOfMonth}
-            onChange={(e) =>
-              onDayOfMonthChange(Number(e.target.value))
+            value={
+              Number.isNaN(newRecurringDayOfMonth)
+                ? ''
+                : newRecurringDayOfMonth
             }
+            onChange={(e) => {
+              const v = e.target.value
+              setNewRecurringDayOfMonth(
+                v === '' ? NaN : Number(v)
+              )
+            }}
             className="border rounded px-2 py-1 w-24"
           />
         ) : (
           <select
             value={newRecurringDayOfWeek}
             onChange={(e) =>
-              onDayOfWeekChange(Number(e.target.value))
+              setNewRecurringDayOfWeek(Number(e.target.value))
             }
             className="border rounded px-2 py-1"
           >
@@ -123,7 +114,7 @@ export function RecurringAddForm({
         <select
           value={newRecurringCategoryId ?? ''}
           onChange={(e) =>
-            onCategoryIdChange(e.target.value || null)
+            setNewRecurringCategoryId(e.target.value || null)
           }
           className="border rounded px-2 py-1"
         >
@@ -141,15 +132,14 @@ export function RecurringAddForm({
               </option>
             ))}
         </select>
-
       </div>
 
       <button
-        onClick={onAdd}
-        disabled={disabled}
+        onClick={handleAddRecurring}
+        disabled={editingRecurringId !== null}
         className={`
           rounded px-4 py-1.5 text-sm
-          ${disabled
+          ${editingRecurringId !== null
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'border border-green-400 text-green-600 hover:bg-green-500 hover:text-white'
           }

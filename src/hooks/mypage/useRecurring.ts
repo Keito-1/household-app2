@@ -101,14 +101,23 @@ export function useRecurring(
     const { data, error } = await supabase
       .from('recurring_transactions')
       .select('*')
+      .eq('user_id', user.id)   
       .order('created_at', { ascending: false })
+
 
     if (!error && data) {
       setRecurringList(data)
     }
 
     setRecurringLoading(false)
+
   }, [user])
+  
+  useEffect(() => {
+  if (!user) return
+  fetchRecurring()
+}, [user, fetchRecurring])
+
 
   // Add Recurring
   const handleAddRecurring = async () => {

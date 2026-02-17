@@ -2,63 +2,44 @@
 
 import { CURRENCIES } from '@/types/currency'
 import { WEEK_DAYS } from '@/constants/date'
-
-import type { Category } from '@/types/category'
+import { useRecurringContext } from '@/contexts/RecurringContext'
 import type { RecurringTransaction } from '@/types/recurring'
 
 type Props = {
   recurring: RecurringTransaction
-  isEditing: boolean
-  editRecurringType: 'income' | 'expense'
-  onEditTypeChange: (type: 'income' | 'expense') => void
-  editRecurringAmount: string
-  onEditAmountChange: (value: string) => void
-  editRecurringCurrency: string
-  onEditCurrencyChange: (value: string) => void
-  editRecurringCycle: 'monthly' | 'weekly'
-  onEditCycleChange: (value: 'monthly' | 'weekly') => void
-  editRecurringDayOfMonth: number
-  onEditDayOfMonthChange: (value: number) => void
-  editRecurringDayOfWeek: number
-  onEditDayOfWeekChange: (value: number) => void
-  editRecurringCategoryId: string | null
-  onEditCategoryIdChange: (value: string | null) => void
-  categories: Category[]
-  onStartEdit: () => void
-  onSave: () => void
-  onCancel: () => void
-  onToggle: () => void
-  onDelete: () => void
-  savingRecurring: boolean
-  disableActions: boolean
 }
 
-export function RecurringItem({
-  recurring,
-  isEditing,
-  editRecurringType,
-  onEditTypeChange,
-  editRecurringAmount,
-  onEditAmountChange,
-  editRecurringCurrency,
-  onEditCurrencyChange,
-  editRecurringCycle,
-  onEditCycleChange,
-  editRecurringDayOfMonth,
-  onEditDayOfMonthChange,
-  editRecurringDayOfWeek,
-  onEditDayOfWeekChange,
-  editRecurringCategoryId,
-  onEditCategoryIdChange,
-  categories,
-  onStartEdit,
-  onSave,
-  onCancel,
-  onToggle,
-  onDelete,
-  savingRecurring,
-  disableActions,
-}: Props) {
+export function RecurringItem({ recurring }: Props) {
+  const {
+    editingRecurringId,
+    editRecurringType,
+    setEditRecurringType,
+    editRecurringAmount,
+    setEditRecurringAmount,
+    editRecurringCurrency,
+    setEditRecurringCurrency,
+    editRecurringCycle,
+    setEditRecurringCycle,
+    editRecurringDayOfMonth,
+    setEditRecurringDayOfMonth,
+    editRecurringDayOfWeek,
+    setEditRecurringDayOfWeek,
+    editRecurringCategoryId,
+    setEditRecurringCategoryId,
+    categories,
+    startEditRecurring,
+    handleUpdateRecurring,
+    handleCancelEditRecurring,
+    handleToggleRecurring,
+    setDeleteRecurringTargetId,
+    savingRecurring,
+  } = useRecurringContext()
+
+
+  const isEditing = editingRecurringId === recurring.id
+  const isDisabled = editingRecurringId !== null && editingRecurringId !== recurring.id
+
+  // 以降は既存コードそのまま
   return (
     <div className="rounded border bg-white p-4 shadow-sm">
       {isEditing ? (
@@ -70,8 +51,8 @@ export function RecurringItem({
               value={editRecurringType}
               onChange={(e) => {
                 const nextType = e.target.value as 'income' | 'expense'
-                onEditTypeChange(nextType)
-                onEditCategoryIdChange(null)
+                setEditRecurringType(nextType)
+                setEditRecurringCategoryId(null)
               }}
               className="border rounded px-2 py-1"
             >
@@ -84,7 +65,7 @@ export function RecurringItem({
               onChange={(e) => {
                 const v = e.target.value
                 if (/^\d*$/.test(v)) {
-                  onEditAmountChange(v)
+                  setEditRecurringAmount(v)
                 }
               }}
               className="border rounded px-2 py-1 w-32"
@@ -93,7 +74,7 @@ export function RecurringItem({
 
             <select
               value={editRecurringCurrency}
-              onChange={(e) => onEditCurrencyChange(e.target.value)}
+              onChange={(e) => setEditRecurringCurrency(e.target.value)}
               className="border rounded px-2 py-1"
             >
               {CURRENCIES.map((c) => (
@@ -106,7 +87,7 @@ export function RecurringItem({
             <select
               value={editRecurringCycle}
               onChange={(e) =>
-                onEditCycleChange(e.target.value as 'monthly' | 'weekly')
+                setEditRecurringCycle(e.target.value as 'monthly' | 'weekly')
               }
               className="border rounded px-2 py-1 w-full sm:w-auto"
             >
@@ -120,7 +101,7 @@ export function RecurringItem({
                 max={31}
                 value={editRecurringDayOfMonth}
                 onChange={(e) =>
-                  onEditDayOfMonthChange(Number(e.target.value))
+                  setEditRecurringDayOfMonth(Number(e.target.value))
                 }
                 className="border rounded px-2 py-1 w-full sm:w-24"
               />
@@ -128,7 +109,7 @@ export function RecurringItem({
               <select
                 value={editRecurringDayOfWeek}
                 onChange={(e) =>
-                  onEditDayOfWeekChange(Number(e.target.value))
+                  setEditRecurringDayOfWeek(Number(e.target.value))
                 }
                 className="border rounded px-2 py-1 w-full sm:w-auto"
               >
@@ -140,7 +121,7 @@ export function RecurringItem({
             <select
               value={editRecurringCategoryId ?? ''}
               onChange={(e) =>
-                onEditCategoryIdChange(e.target.value || null)
+                setEditRecurringCategoryId(e.target.value || null)
               }
               className="border rounded px-2 py-1 w-full sm:w-auto"
             >
@@ -158,7 +139,7 @@ export function RecurringItem({
 
           <div className="flex gap-2 justify-end">
             <button
-              onClick={onSave}
+              onClick={() => handleUpdateRecurring(recurring.id)}
               disabled={savingRecurring}
               className={`rounded px-4 py-1.5 text-sm
                 ${savingRecurring
@@ -169,7 +150,7 @@ export function RecurringItem({
               保存
             </button>
             <button
-              onClick={onCancel}
+              onClick={handleCancelEditRecurring}
               className="rounded px-4 py-1.5 text-sm border border-red-400 text-red-600 hover:bg-red-500 hover:text-white"
             >
               キャンセル
@@ -199,10 +180,13 @@ export function RecurringItem({
 
           <div className="flex gap-2 justify-end items-center">
             <button
-              onClick={onStartEdit}
-              disabled={disableActions}
+              onClick={() => startEditRecurring(recurring)}
+              disabled={
+                editingRecurringId !== null &&
+                editingRecurringId !== recurring.id
+              }
               className={`text-xs px-2 py-1 rounded transition border
-              ${disableActions
+              ${isDisabled
                   ? 'opacity-50 cursor-not-allowed'
                   : 'border-blue-400 text-blue-600 hover:bg-blue-500 hover:text-white'
                 }`}
@@ -211,10 +195,10 @@ export function RecurringItem({
             </button>
 
             <button
-              onClick={onToggle}
-              disabled={disableActions}
+              onClick={() =>handleToggleRecurring(recurring.id, recurring.is_active)}
+              disabled={isDisabled}
               className={`text-xs px-2 py-1 rounded transition
-                  ${disableActions
+                  ${isDisabled
                   ? 'opacity-50 cursor-not-allowed'
                   : recurring.is_active
                     ? 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -226,10 +210,10 @@ export function RecurringItem({
             </button>
 
             <button
-              onClick={onDelete}
-              disabled={disableActions}
+              onClick={() =>setDeleteRecurringTargetId(recurring.id)}
+              disabled={isDisabled}
               className={`text-xs px-2 py-1 rounded transition border
-                ${disableActions
+                ${isDisabled
                   ? 'opacity-50 cursor-not-allowed'
                   : 'border-red-400 text-red-600 hover:bg-red-500 hover:text-white'
                 }`}
