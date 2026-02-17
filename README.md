@@ -16,6 +16,19 @@
 
 ---
 
+## デモ
+
+### デプロイ先
+https://household-app2.vercel.app/
+
+### デモアカウント
+Email: kei152133@gmail.com  
+Password: Keito1017
+
+※ テスト用アカウントのため、データは定期的にリセットされます。
+
+---
+
 ## 主な機能
 
 - ユーザー認証（サインアップ / ログイン）
@@ -42,6 +55,34 @@
   - Authentication
   - Database
   - Row Level Security (RLS)
+  - Edge Functions / Cron
+
+### 外部API / バッチ処理
+- Frankfurter API
+  - 為替レート取得用API
+  - https://www.frankfurter.app/
+
+- Supabase Edge Functions
+  - Frankfurter API から為替レートを取得
+  - exchange_rates テーブルへ保存
+
+- Supabase Cron
+  - 毎日 0:00 に自動実行
+  - 最新為替レートを自動更新
+
+### 為替レート更新設計
+- 外部API（Frankfurter）への直接依存を避けるため、
+  アプリ側はAPIを直接呼ばず、DBを参照する構成にしています。
+
+- Supabase Edge Function にて為替レートを取得し、
+  exchange_rates テーブルへ保存。
+
+- Supabase Cron により毎日 0:00 に自動更新。
+
+この設計により：
+- APIダウン時でも既存データで計算可能
+- フロントエンドのパフォーマンス向上
+- APIコール回数削減
 
 ---
 
