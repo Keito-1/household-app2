@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
-import type { Category } from '@/types/category'
 import type { RecurringTransaction } from '@/types/recurring'
 
 type UseRecurringReturn = {
@@ -112,7 +111,7 @@ export function useRecurring(
     setRecurringLoading(false)
 
   }, [user])
-  
+
   useEffect(() => {
   if (!user) return
   fetchRecurring()

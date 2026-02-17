@@ -25,14 +25,6 @@ export function RecurringProvider({
       value={{
         ...recurring,
         categories,
-        onNewTypeChange: recurring.setNewRecurringType,
-        onNewAmountChange: recurring.setNewRecurringAmount,
-        onNewCurrencyChange: recurring.setNewRecurringCurrency,
-        onNewCategoryIdChange: recurring.setNewRecurringCategoryId,
-        onNewCycleChange: recurring.setNewRecurringCycle,
-        onNewDayOfMonthChange: recurring.setNewRecurringDayOfMonth,
-        onNewDayOfWeekChange: recurring.setNewRecurringDayOfWeek,
-        onAddRecurring: recurring.handleAddRecurring,
       }}
     >
       {children}
